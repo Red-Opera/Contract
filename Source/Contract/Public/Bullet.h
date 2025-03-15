@@ -24,9 +24,21 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Movement")
 	class UProjectileMovementComponent* projectileMovement;
 
+	UPROPERTY(EditAnywhere)
+	class UCapsuleComponent* capsuleComponent;
+
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
+
+	UFUNCTION()
+	void OnOtherHit(class UPrimitiveComponent* HitComp, 
+		class AActor* otherActor, 
+		class UPrimitiveComponent* otherComp,
+		int32 otherBodyIndex,
+		bool bFromSweep,
+		const FHitResult& SweepResult);
+
 
 private:
 	UPROPERTY(VisibleAnywhere)

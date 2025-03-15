@@ -59,8 +59,6 @@ void AGun_AK47::BeginPlay()
 
 void AGun_AK47::Fire()
 {
-	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, TEXT("Bullet is Fire!!"));
-
 	if (bulletBlueprint)
 	{
 		FActorSpawnParameters params;
