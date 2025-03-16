@@ -3,8 +3,9 @@
 
 #include "Eneny.h"
 
-#include "NiagaraFunctionLibrary.h"
-#include "NiagaraComponent.h"
+#include "FloatingDamage.h"
+#include "Components/WidgetComponent.h"
+#include <Kismet\GameplayStatics.h>
 
 // Sets default values
 AEneny::AEneny()
@@ -32,6 +33,12 @@ void AEneny::BeginPlay()
 		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("PlayerController does not exist."));
 		return;
 	}
+
+	if (damageParticle == nullptr)
+	{
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("DamageNiagara does not exist."));
+		return;
+	}
 }
 
 // Called every frame
@@ -52,31 +59,12 @@ void AEneny::SetDamage(FVector hitLocation, int damage)
 {
 	FString damageString = FString::Printf(TEXT("%d"), damage);
 
-	float currentOffset = 0.0f;
+	FTransform spawnTransform = FTransform(FRotator::ZeroRotator, hitLocation);
+	AFloatingDamage* newActor = GetWorld()->SpawnActorDeferred<AFloatingDamage>(damageParticle, spawnTransform);
 
-	FRotator playerRotate = playerController->GetControlRotation();
-	FRotator niagaraRotate = FRotator(180.0f, playerRotate.Yaw, 0.0f);
+	// BeginPlay 전에 damage 값을 설정
+	newActor->SetDamageValue(damage);
 
-	// 자릿수 분리
-	for (int i = 0; i < damageString.Len(); i++)
-	{
-		FString digit = damageString.Mid(i, 1);
-
-		UNiagaraComponent* digitNia = UNiagaraFunctionLibrary::SpawnSystemAtLocation
-		(
-			GetWorld(), 
-			damageNiagara, 
-			hitLocation, 
-			niagaraRotate,
-			FVector(1.0f)
-		);
-
-		digitNia->AddLocalOffset(FVector(0.0f, currentOffset, 0.0f));
-		currentOffset += textOffset;
-
-		FName digitName = FName(*digit);
-		int32 digitIndex = FCString::Atoi(*digit);
-
-		UNiagaraFunctionLibrary::SetTextureObject(digitNia, "Digit", digitImage[digitIndex]);
-	}
+	// 액터 스폰을 마무리하여 BeginPlay가 호출되도록 함
+	UGameplayStatics::FinishSpawningActor(newActor, spawnTransform);
 }

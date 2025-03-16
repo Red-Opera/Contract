@@ -45,7 +45,7 @@ void ABullet::BeginPlay()
 
 void ABullet::OnOtherHit(UPrimitiveComponent* HitComp, AActor* otherActor, UPrimitiveComponent* otherComp, int32 otherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
-	if (otherActor == nullptr || otherActor == this)
+	if (otherActor == nullptr || otherActor == this || !otherActor->IsA(ACharacter::StaticClass()))
 		return;
 
 	FString actorName = otherActor->GetName();

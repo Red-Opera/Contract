@@ -25,7 +25,7 @@ public:
 
 	// 데미지 표기 나이아가라
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
-	class UNiagaraSystem* damageNiagara;
+	TSubclassOf<class AFloatingDamage> damageParticle;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
 	float textOffset = 25.0f;
