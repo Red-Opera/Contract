@@ -7,6 +7,7 @@
 #include "Components/StaticMeshComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "GameFramework/ProjectileMovementComponent.h"
+#include <Kismet\KismetMathLibrary.h>
 
 // Sets default values
 ABullet::ABullet()
@@ -55,7 +56,7 @@ void ABullet::OnOtherHit(UPrimitiveComponent* HitComp, AActor* otherActor, UPrim
 	if (otherActor->IsA(AEneny::StaticClass()))
 	{
 		AEneny* eneny = Cast<AEneny>(otherActor);
-		eneny->SetDamage(50.0f);
+		eneny->SetDamage(GetActorLocation(), UKismetMathLibrary::RandomIntegerInRange(0, 2000));
 	}
 
 	Destroy();

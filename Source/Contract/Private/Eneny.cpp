@@ -3,6 +3,9 @@
 
 #include "Eneny.h"
 
+#include "NiagaraFunctionLibrary.h"
+#include "NiagaraComponent.h"
+
 // Sets default values
 AEneny::AEneny()
 {
@@ -14,6 +17,21 @@ AEneny::AEneny()
 void AEneny::BeginPlay()
 {
 	Super::BeginPlay();
+
+	player = GetWorld()->GetFirstPlayerController()->GetPawn();
+	playerController = GetWorld()->GetFirstPlayerController();
+
+	if (player == nullptr)
+	{
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Player does not exist."));
+		return;
+	}
+
+	if (playerController == nullptr)
+	{
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("PlayerController does not exist."));
+		return;
+	}
 }
 
 // Called every frame
@@ -30,9 +48,35 @@ void AEneny::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 
 }
 
-void AEneny::SetDamage(float damage)
+void AEneny::SetDamage(FVector hitLocation, int damage)
 {
-	FString str = FString::Printf(TEXT("Damage : %f"), damage);
-	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, str);
-}
+	FString damageString = FString::Printf(TEXT("%d"), damage);
 
+	float currentOffset = 0.0f;
+
+	FRotator playerRotate = playerController->GetControlRotation();
+	FRotator niagaraRotate = FRotator(180.0f, playerRotate.Yaw, 0.0f);
+
+	// ÀÚ¸´¼ö ºÐ¸®
+	for (int i = 0; i < damageString.Len(); i++)
+	{
+		FString digit = damageString.Mid(i, 1);
+
+		UNiagaraComponent* digitNia = UNiagaraFunctionLibrary::SpawnSystemAtLocation
+		(
+			GetWorld(), 
+			damageNiagara, 
+			hitLocation, 
+			niagaraRotate,
+			FVector(1.0f)
+		);
+
+		digitNia->AddLocalOffset(FVector(0.0f, currentOffset, 0.0f));
+		currentOffset += textOffset;
+
+		FName digitName = FName(*digit);
+		int32 digitIndex = FCString::Atoi(*digit);
+
+		UNiagaraFunctionLibrary::SetTextureObject(digitNia, "Digit", digitImage[digitIndex]);
+	}
+}

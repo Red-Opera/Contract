@@ -21,9 +21,23 @@ public:
 	// Called to bind functionality to input
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
-	void SetDamage(float damage);
+	void SetDamage(FVector hitLocation, int damage);
+
+	// 데미지 표기 나이아가라
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
+	class UNiagaraSystem* damageNiagara;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
+	float textOffset = 25.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
+	TArray<UTexture*> digitImage;
 
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
+
+private:
+	class AActor* player;
+	class APlayerController* playerController;
 };
