@@ -9,7 +9,7 @@
 #include "Bullet.h"
 
 // Sets default values
-AGun_AK47::AGun_AK47()
+AGun_AK47::AGun_AK47() : isFire(false)
 {
  	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
@@ -54,23 +54,41 @@ void AGun_AK47::BeginPlay()
 
 	EnableInput(playerController);
 
-	inputComponent->BindAction(TEXT("GunFire"), IE_Pressed, this, &AGun_AK47::Fire);
+	// 입력 바인딩 설정
+	inputComponent->BindAction(TEXT("GunFire"), IE_Pressed, this, &AGun_AK47::StartFire);
+	inputComponent->BindAction(TEXT("GunFire"), IE_Released, this, &AGun_AK47::StopFire);
 }
 
 void AGun_AK47::Fire()
 {
-	if (bulletBlueprint)
-	{
-		FActorSpawnParameters params;
+	FActorSpawnParameters params;
 
-		params.Owner = this;
-		params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+	params.Owner = this;
+	params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
-		FVector muzzleLocation = muzzle->GetComponentLocation();
-		FVector muzzleForawrd = muzzle->GetForwardVector();
+	FVector muzzleLocation = muzzle->GetComponentLocation();
+	FVector muzzleForawrd = muzzle->GetForwardVector();
 
-		GetWorld()->SpawnActor<ABullet>(bulletBlueprint, muzzleLocation, muzzle->GetComponentRotation(), params);
-	}
+	GetWorld()->SpawnActor<ABullet>(bulletBlueprint, muzzleLocation, muzzle->GetComponentRotation(), params);
+}
+
+void AGun_AK47::StartFire()
+{
+	isFire = true;
+
+	// 처음 한 번 즉시 발사
+	Fire();
+
+	// 이후 FireRate 간격으로 Fire() 함수를 반복 호출 (FireRate는 발사 간격)
+	GetWorld()->GetTimerManager().SetTimer(TimerHandle_AutoFire, this, &AGun_AK47::Fire, fireRate, true);
+}
+
+void AGun_AK47::StopFire()
+{
+	isFire = false;
+
+	// 타이머 핸들을 이용하여 반복 호출 중지
+	GetWorld()->GetTimerManager().ClearTimer(TimerHandle_AutoFire);
 }
 
 // Called every frame

@@ -50,7 +50,7 @@ void ABullet::OnOtherHit(UPrimitiveComponent* HitComp, AActor* otherActor, UPrim
 
 	FString actorName = otherActor->GetName();
 
-	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString::Printf(TEXT("Bullet Hit : %s"), *actorName));
+	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, FString::Printf(TEXT("Bullet Hit : %s"), *actorName));
 
 	// Eneny 타입인지 확인
 	if (otherActor->IsA(AEneny::StaticClass()))
