@@ -59,12 +59,28 @@ void AEneny::SetDamage(FVector hitLocation, int damage)
 {
 	FString damageString = FString::Printf(TEXT("%d"), damage);
 
+	// 현재 체력이 0이면 데미지를 주지 않음
+	if (hp <= 0)
+		return;
+
+	// 데미지를 받음
+	int resultHP = hp - damage;
+
+	if (resultHP > 0)
+		hp = resultHP;
+
+	else
+	{
+		hp = 0;
+		isDead = true;
+	}
+
 	FTransform spawnTransform = FTransform(FRotator::ZeroRotator, hitLocation);
-	AFloatingDamage* newActor = GetWorld()->SpawnActorDeferred<AFloatingDamage>(damageParticle, spawnTransform);
+	AFloatingDamage* newDamageWidget = GetWorld()->SpawnActorDeferred<AFloatingDamage>(damageParticle, spawnTransform);
 
 	// BeginPlay 전에 damage 값을 설정
-	newActor->SetDamageValue(damage);
+	newDamageWidget->SetDamageValue(damage);
 
 	// 액터 스폰을 마무리하여 BeginPlay가 호출되도록 함
-	UGameplayStatics::FinishSpawningActor(newActor, spawnTransform);
+	UGameplayStatics::FinishSpawningActor(newDamageWidget, spawnTransform);
 }
