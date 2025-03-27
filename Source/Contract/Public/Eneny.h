@@ -33,6 +33,9 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
 	TArray<UTexture*> digitImage;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
+	bool isDead = false;
+
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
@@ -40,4 +43,6 @@ protected:
 private:
 	class AActor* player;
 	class APlayerController* playerController;
+
+	float hp = 1000000.0f;
 };
