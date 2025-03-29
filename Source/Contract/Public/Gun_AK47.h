@@ -37,6 +37,9 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bullet")
 	float fireRate = 0.1f;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
+	class UNiagaraComponent* gunFireNiagara;
+
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;

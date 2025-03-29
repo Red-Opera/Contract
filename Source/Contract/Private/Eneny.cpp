@@ -39,6 +39,45 @@ void AEneny::BeginPlay()
 		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("DamageNiagara does not exist."));
 		return;
 	}
+
+	UInputComponent* inputComponent = playerController->InputComponent;
+
+	if (inputComponent == nullptr)
+	{
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("InputComponent does not exist."));
+		return;
+	}
+
+
+	EnableInput(playerController);
+
+	// 입력 바인딩 설정  
+	inputComponent->BindAction(TEXT("GunFire"), IE_Pressed, this, &AEneny::StartFire);
+	inputComponent->BindAction(TEXT("GunFire"), IE_Released, this, &AEneny::StopFire);
+}
+
+void AEneny::Fire()
+{
+
+}
+
+void AEneny::StartFire()
+{
+	isFire = true;
+
+	// 처음 한 번 즉시 발사  
+	Fire();
+
+	// 이후 FireRate 간격으로 Fire() 함수를 반복 호출 (FireRate는 발사 간격)  
+	GetWorld()->GetTimerManager().SetTimer(TimerHandle_AutoFire, this, &AEneny::Fire, fireRate, true);
+}
+
+void AEneny::StopFire()
+{
+	isFire = false;
+
+	// 타이머 핸들을 이용하여 반복 호출 중지  
+	GetWorld()->GetTimerManager().ClearTimer(TimerHandle_AutoFire);
 }
 
 // Called every frame
