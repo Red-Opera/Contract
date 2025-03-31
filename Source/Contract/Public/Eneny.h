@@ -57,7 +57,7 @@ private:
 	class AActor* player;
 	class APlayerController* playerController;
 
-	float hp = 1000000.0f;
+	float hp = 1000.0f;
 
 	FTimerHandle TimerHandle_AutoFire;
 };

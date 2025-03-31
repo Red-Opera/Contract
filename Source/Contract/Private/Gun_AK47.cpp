@@ -17,8 +17,10 @@ AGun_AK47::AGun_AK47() : isFire(false)
    PrimaryActorTick.bCanEverTick = true;  
 
    muzzle = CreateDefaultSubobject<UArrowComponent>(TEXT("Muzzle"));  
+   gunMuzzleFireNiagara = CreateDefaultSubobject<UNiagaraComponent>(TEXT("GunFireNiagara"));
 
-   gunFireNiagara = CreateDefaultSubobject<UNiagaraComponent>(TEXT("GunFireNiagara"));
+   muzzle->SetupAttachment(GetMesh(), TEXT("Muzzle"));
+   gunMuzzleFireNiagara->SetupAttachment(GetMesh(), TEXT("Muzzle"));
 }  
 
 // Called when the game starts or when spawned  
@@ -55,7 +57,7 @@ void AGun_AK47::BeginPlay()
        return;  
    } 
    // Niagara 이펙트 존재 확인
-   if (gunFireNiagara == nullptr)
+   if (gunMuzzleFireNiagara == nullptr)
    {
        GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Gun Fire Niagara does not exist."));
        return;
@@ -69,7 +71,7 @@ void AGun_AK47::BeginPlay()
    }
 
    muzzle->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, FName(TEXT("GunFire"))); 
-   gunFireNiagara->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, FName(TEXT("GunFire")));
+   gunMuzzleFireNiagara->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, FName(TEXT("GunFire")));
    muzzle->SetRelativeRotation(FRotator(0.0f, 90.0f, 0.0f));
 
    EnableInput(playerController);  
@@ -83,12 +85,12 @@ void AGun_AK47::Fire()
 {  
    FVector muzzleLocation = muzzle->GetComponentLocation();  
    FRotator muzzleRotation = muzzle->GetComponentRotation();  
-   FRotator gunFireRotation = gunFireNiagara->GetComponentRotation();
+   FRotator gunFireRotation = gunMuzzleFireNiagara->GetComponentRotation();
 
    UNiagaraFunctionLibrary::SpawnSystemAtLocation
    (  
        GetWorld(),  
-       gunFireNiagara->GetAsset(),  
+       gunMuzzleFireNiagara->GetAsset(),
        muzzleLocation,  
        gunFireRotation
    );  

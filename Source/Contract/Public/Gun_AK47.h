@@ -37,8 +37,8 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bullet")
 	float fireRate = 0.1f;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
-	class UNiagaraComponent* gunFireNiagara;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bullet")
+	class UNiagaraComponent* gunMuzzleFireNiagara;
 
 protected:
 	// Called when the game starts or when spawned
