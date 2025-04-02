@@ -22,10 +22,7 @@ public:
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
     class UWidgetComponent* damageWidget;
 
-    void SetDamageValue(int32 NewDamage)
-    {
-        damage = NewDamage;
-    }
+    void SetDamageValue(int32 NewDamage);
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
     int damage;

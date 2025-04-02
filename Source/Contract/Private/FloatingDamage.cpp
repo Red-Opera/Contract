@@ -21,6 +21,11 @@ AFloatingDamage::AFloatingDamage()
 	damage = 0;
 }
 
+void AFloatingDamage::SetDamageValue(int32 NewDamage)
+{
+	damage = NewDamage;
+}
+
 // Called when the game starts or when spawned
 void AFloatingDamage::BeginPlay()
 {

@@ -38,6 +38,12 @@ public:
 	float fireRate = 0.1f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bullet")
+	int maxAmmoEquipped = 30;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bullet")
+	int currentAmmoEquipped = 30;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bullet")
 	class UNiagaraComponent* gunMuzzleFireNiagara;
 
 protected:
