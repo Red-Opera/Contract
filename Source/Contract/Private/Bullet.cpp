@@ -23,8 +23,8 @@ ABullet::ABullet()
 
 	projectileMovement = CreateDefaultSubobject<UProjectileMovementComponent>(TEXT("ProjectileMovement"));
 	projectileMovement->UpdatedComponent = RootComponent;
-	projectileMovement->InitialSpeed = 3000.0f;
-	projectileMovement->MaxSpeed = 3000.0f;
+	projectileMovement->InitialSpeed = 9000.0f;
+	projectileMovement->MaxSpeed = 9000.0f;
 	projectileMovement->bRotationFollowsVelocity = true;
 
 	capsuleComponent->OnComponentBeginOverlap.AddDynamic(this, &ABullet::OnOtherHit);
@@ -50,7 +50,7 @@ void ABullet::OnOtherHit(UPrimitiveComponent* HitComp, AActor* otherActor, UPrim
 
 	FString actorName = otherActor->GetName();
 
-	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, FString::Printf(TEXT("Bullet Hit : %s"), *actorName));
+	//GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, FString::Printf(TEXT("Bullet Hit : %s"), *actorName));
 
 	// Eneny 타입인지 확인
 	if (otherActor->IsA(AEneny::StaticClass()))
