@@ -32,7 +32,8 @@ protected:
 private:
 	class ACharacter* player;
 	class APlayerController* playerController;
+	class UPlayerItem* playerData;
 
 	bool isPlayerClose = false;
-	int ammoCount;
+	int ammoCount = 30;
 };

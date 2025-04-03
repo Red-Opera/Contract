@@ -23,8 +23,8 @@ ABullet::ABullet()
 
 	projectileMovement = CreateDefaultSubobject<UProjectileMovementComponent>(TEXT("ProjectileMovement"));
 	projectileMovement->UpdatedComponent = RootComponent;
-	projectileMovement->InitialSpeed = 9000.0f;
-	projectileMovement->MaxSpeed = 9000.0f;
+	projectileMovement->InitialSpeed = 6000.0f;
+	projectileMovement->MaxSpeed = 6000.0f;
 	projectileMovement->bRotationFollowsVelocity = true;
 
 	capsuleComponent->OnComponentBeginOverlap.AddDynamic(this, &ABullet::OnOtherHit);

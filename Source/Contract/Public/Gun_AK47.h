@@ -50,9 +50,15 @@ private:
 	void StartFire();
 	void StopFire();
 
+	void Reload();
+
 	class AActor* player;
 	class APlayerController* playerController;
+	class UPlayerItem* playerData;
 
 	// 헤더 파일에 타이머 핸들 선언
 	FTimerHandle TimerHandle_AutoFire;
+
+	int maxCount = 30;		// 최대 총알 수
+	int ammoCount = 0;		// 현재 총알 수
 };

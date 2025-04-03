@@ -1,4 +1,5 @@
 #include "AmmoBox.h"
+#include "PlayerItem.h"
 
 #include "GameFramework/Character.h"
 #include "GameFramework/CharacterMovementComponent.h"
@@ -14,6 +15,9 @@ AAmmoBox::AAmmoBox()
 	// mesh 중력 활성화
 	mesh->SetSimulatePhysics(true);
 	mesh->SetEnableGravity(true);
+
+	FString assetPath = TEXT("DataAsset'/Game/PlayaerData/PlayerItemData.PlayerItemData'");
+	playerData = Cast<UPlayerItem>(StaticLoadObject(UPlayerItem::StaticClass(), nullptr, *assetPath));
 }
 
 void AAmmoBox::BeginPlay()
@@ -22,6 +26,13 @@ void AAmmoBox::BeginPlay()
 
 	player = UGameplayStatics::GetPlayerCharacter(GetWorld(), 0);
 	playerController = GetWorld()->GetFirstPlayerController();
+
+	// playerData가 null인지 확인
+	if (playerData == nullptr)
+	{
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Player Data is null! Check asset path."));
+		return;
+	}
 
 	if (player == nullptr)
 	{
@@ -45,7 +56,6 @@ void AAmmoBox::BeginPlay()
 
 	EnableInput(playerController);
 	playerInputComponent->BindAction(TEXT("Interaction"), IE_Pressed, this, &AAmmoBox::AddAmmo);
-	
 }
 
 bool AAmmoBox::CheckPlayerIsClose()
@@ -75,7 +85,10 @@ void AAmmoBox::AddAmmo()
 	}
 
 	// 플레이어 인벤토리에 총알 추가
-	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Blue, TEXT("Player is close."));
+	playerData->maxBullets += ammoCount;
+	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, FString::Printf(TEXT("Max Bullets : %d"), playerData->maxBullets));
+
+	Destroy();
 }
 
 // Called every frame
@@ -83,4 +96,3 @@ void AAmmoBox::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 }
-

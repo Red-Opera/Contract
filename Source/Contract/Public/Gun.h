@@ -41,7 +41,7 @@ public:
 	int maxAmmoEquipped = 30;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bullet")
-	int currentAmmoEquipped = 30;
+	int currentAmmoEquipped = 0;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bullet")
 	class UNiagaraComponent* gunMuzzleFireNiagara;
@@ -56,9 +56,13 @@ private:
 	void StartFire();
 	void StopFire();
 
+	void Reload();
+
 	class AActor* player;
 	class APlayerController* playerController;
+	class UPlayerItem* playerData;
 
 	// 헤더 파일에 타이머 핸들 선언
 	FTimerHandle TimerHandle_AutoFire;
+
 };

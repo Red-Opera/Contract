@@ -11,7 +11,7 @@ class CONTRACT_API UPlayerItem : public UDataAsset
 
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bullet")
-	int32 MaxBullets = 30;
+	int32 maxBullets = 30;
 	
 private:
 };
