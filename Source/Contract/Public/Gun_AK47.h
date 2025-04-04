@@ -54,7 +54,7 @@ private:
 
 	class AActor* player;
 	class APlayerController* playerController;
-	class UPlayerItem* playerData;
+	class UPlayerInventory* playerInventory;
 
 	// 헤더 파일에 타이머 핸들 선언
 	FTimerHandle TimerHandle_AutoFire;

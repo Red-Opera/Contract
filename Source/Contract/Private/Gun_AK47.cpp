@@ -1,7 +1,7 @@
 // Fill out your copyright notice in the Description page of Project Settings.  
 
 #include "Gun_AK47.h"  
-#include "PlayerItem.h"
+#include "PlayerInventory.h"
 
 #include "NiagaraFunctionLibrary.h"  
 #include "NiagaraComponent.h"  
@@ -75,12 +75,12 @@ void AGun_AK47::BeginPlay()
    gunMuzzleFireNiagara->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, FName(TEXT("GunFire")));
    muzzle->SetRelativeRotation(FRotator(0.0f, 90.0f, 0.0f));
 
-   FString assetPath = TEXT("DataAsset'/Game/PlayaerData/PlayerItemData.PlayerItemData'");
-   playerData = Cast<UPlayerItem>(StaticLoadObject(UPlayerItem::StaticClass(), nullptr, *assetPath));
+   FString assetPath = TEXT("DataAsset'/Game/PlayerInventory/PlayerInventory.PlayerInventory'");
+   playerInventory = Cast<UPlayerInventory>(StaticLoadObject(UPlayerInventory::StaticClass(), nullptr, *assetPath));
 
-   if (playerData == nullptr)
+   if (playerInventory == nullptr)
    {
-       GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Player Data is null! Check asset path."));
+       GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Player Inventory is null! Check asset path."));
        return;
    }
 
@@ -151,16 +151,16 @@ void AGun_AK47::Reload()
 {
     int requireAmmo = maxCount - ammoCount;
 
-    if (playerData->maxBullets >= requireAmmo)
+    if (playerInventory->bulletCount >= requireAmmo)
     {
-        playerData->maxBullets -= requireAmmo;
+        playerInventory->bulletCount -= requireAmmo;
         ammoCount += requireAmmo;
     }
 
     else
     {
-        ammoCount += playerData->maxBullets;
-        playerData->maxBullets = 0;
+        ammoCount += playerInventory->bulletCount;
+        playerInventory->bulletCount = 0;
     }
 }
 

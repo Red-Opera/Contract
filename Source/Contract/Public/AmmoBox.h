@@ -4,10 +4,11 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include "Item.h"
 #include "AmmoBox.generated.h"
 
 UCLASS()
-class CONTRACT_API AAmmoBox : public AActor
+class CONTRACT_API AAmmoBox : public AItem
 {
 	GENERATED_BODY()
 	
@@ -16,24 +17,11 @@ public:
 
 	virtual void Tick(float DeltaTime) override;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Ammo")
-	UStaticMeshComponent* mesh;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Interaction")
-	float interactionDistance = 120.0f;
-
 protected:
 	virtual void BeginPlay() override;
-
-	bool CheckPlayerIsClose();	// 플레이어가 시계와 가까운지 확인하는 메소드
 
 	void AddAmmo();				// 총알을 추가하는 메소드
 
 private:
-	class ACharacter* player;
-	class APlayerController* playerController;
-	class UPlayerItem* playerData;
-
-	bool isPlayerClose = false;
 	int ammoCount = 30;
 };

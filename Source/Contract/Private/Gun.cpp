@@ -1,5 +1,5 @@
 #include "Gun.h"
-#include "PlayerItem.h"
+#include "PlayerInventory.h"
 
 #include "NiagaraFunctionLibrary.h"  
 #include "NiagaraComponent.h"  
@@ -64,12 +64,12 @@ void AGun::BeginPlay()
         return;
     }
 
-    FString assetPath = TEXT("DataAsset'/Game/PlayaerData/PlayerItemData.PlayerItemData'");
-    playerData = Cast<UPlayerItem>(StaticLoadObject(UPlayerItem::StaticClass(), nullptr, *assetPath));
+    FString assetPath = TEXT("DataAsset'/Game/PlayerInventory/PlayerInventory.PlayerInventory'");
+    playerInventory = Cast<UPlayerInventory>(StaticLoadObject(UPlayerInventory::StaticClass(), nullptr, *assetPath));
 
-	if (playerData == nullptr)
+	if (playerInventory == nullptr)
 	{
-		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Player Data is null! Check asset path."));
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Player Inventory is null! Check asset path."));
 		return;
 	}
 
@@ -144,19 +144,19 @@ void AGun::Reload()
 {
 	int requireAmmo = maxAmmoEquipped - currentAmmoEquipped;
 
-	if (playerData->maxBullets >= requireAmmo)
+	if (playerInventory->bulletCount >= requireAmmo)
 	{
-		playerData->maxBullets -= requireAmmo;
+        playerInventory->bulletCount -= requireAmmo;
 		currentAmmoEquipped += requireAmmo;
 	}
 
 	else
 	{
-		currentAmmoEquipped += playerData->maxBullets;
-		playerData->maxBullets = 0;
+		currentAmmoEquipped += playerInventory->bulletCount;
+        playerInventory->bulletCount = 0;
 	}
 
 	// 남은 총알 수 출력
-	FString ammoCountStr = FString::Printf(TEXT("Current Ammo: %d"), playerData->maxBullets);
+	FString ammoCountStr = FString::Printf(TEXT("Current Ammo: %d"), playerInventory->bulletCount);
 	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, ammoCountStr);
 }
