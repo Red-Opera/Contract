@@ -8,6 +8,11 @@ void AGrenade::BeginPlay()
 	playerInputComponent->BindAction(TEXT("Interaction"), IE_Pressed, this, &AGrenade::AddGrenade);
 }
 
+void AGrenade::UseItem()
+{
+
+}
+
 void AGrenade::AddGrenade()
 {
 	if (!CheckPlayerIsClose())

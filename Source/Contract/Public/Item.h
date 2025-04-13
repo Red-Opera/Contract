@@ -22,10 +22,12 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Interaction")
 	float interactionDistance = 120.0f;
 
+	virtual void UseItem() {};		// 아이템 사용 메소드
+
 protected:
 	virtual void BeginPlay() override;
 
-	bool CheckPlayerIsClose();	// 플레이어가 시계와 가까운지 확인하는 메소드
+	bool CheckPlayerIsClose();		// 플레이어가 시계와 가까운지 확인하는 메소드
 
 	class ACharacter* player;
 	class APlayerController* playerController;

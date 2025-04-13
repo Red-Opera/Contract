@@ -16,6 +16,5 @@ protected:
 	virtual void BeginPlay() override;
 
 private:
-
 	void AddMolotovCocktail();	// 수류탄을 추가하는 메소드
 };

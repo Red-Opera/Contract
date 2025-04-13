@@ -12,10 +12,11 @@ class CONTRACT_API AGrenade : public AItem
 public:
 	AGrenade() = default;
 
+	void AddGrenade();	// 수류탄을 추가하는 메소드
+
 protected:
 	virtual void BeginPlay() override;
+	virtual void UseItem() override;		// 아이템 사용 메소드
 
 private:
-	
-	void AddGrenade();	// 수류탄을 추가하는 메소드
 };
