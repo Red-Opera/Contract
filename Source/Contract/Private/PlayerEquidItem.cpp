@@ -202,6 +202,10 @@ void UPlayerEquidItem::ThrowItem()
 		);
 	}
 
+	// 아이템 사용
+	AItem* item = Cast<AItem>(currentEquippedItem);
+	item->UseItem();
+
 	currentEquippedItem = nullptr; // 장착된 아이템 초기화
 }
 
