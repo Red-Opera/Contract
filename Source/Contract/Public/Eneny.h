@@ -44,6 +44,13 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bullet")
 	float fireRate = 0.1f;
 
+	// 적이 갖고 있는 아이템
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Items")
+	TArray<int> itemCount;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Items")
+	int money = 0;
+
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
@@ -54,8 +61,11 @@ private:
 	void StartFire();
 	void StopFire();
 
+	void Death();
+
 	class AActor* player;
 	class APlayerController* playerController;
+	class UIDToItem* idToItem;
 
 	float hp = 1000.0f;
 

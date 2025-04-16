@@ -2,15 +2,14 @@
 
 
 #include "Eneny.h"
-
 #include "FloatingDamage.h"
-#include "Components/WidgetComponent.h"
-#include <Kismet\GameplayStatics.h>
+#include "IDToItem.h"
 
-// Sets default values
+#include "Components/WidgetComponent.h"
+#include "Kismet/GameplayStatics.h"
+
 AEneny::AEneny()
 {
- 	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 }
 
@@ -18,6 +17,9 @@ AEneny::AEneny()
 void AEneny::BeginPlay()
 {
 	Super::BeginPlay();
+
+	itemCount.Add(2);
+	itemCount.Add(4);
 
 	player = GetWorld()->GetFirstPlayerController()->GetPawn();
 	playerController = GetWorld()->GetFirstPlayerController();
@@ -48,6 +50,14 @@ void AEneny::BeginPlay()
 		return;
 	}
 
+	FString assetPath = TEXT("DataAsset'/Game/PlayerInventory/IDToDataAsset.IDToDataAsset'");
+	idToItem = Cast<UIDToItem>(StaticLoadObject(UIDToItem::StaticClass(), nullptr, *assetPath));
+
+	if (idToItem == nullptr)
+	{
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("IDToItem does not exist."));
+		return;
+	}
 
 	EnableInput(playerController);
 
@@ -78,6 +88,73 @@ void AEneny::StopFire()
 
 	// 타이머 핸들을 이용하여 반복 호출 중지  
 	GetWorld()->GetTimerManager().ClearTimer(TimerHandle_AutoFire);
+}
+
+void AEneny::Death()
+{
+	// 적이 죽은 위치를 기준으로 아이템을 배치
+	FVector baseLocation = GetActorLocation();
+
+	// itemCount 배열을 순회하면서 각 아이템을 배치
+	for (int32 itemId = 0; itemId < itemCount.Num(); itemId++)
+	{
+		// 해당 ID의 아이템 개수만큼 반복
+		for (int32 i = 0; i < itemCount[itemId]; i++)
+		{
+			// idToItem에서 아이템 클래스 가져오기
+			TSubclassOf<AItem> itemClass = idToItem->intToitems[itemId];
+
+			if (itemClass != nullptr)
+			{
+				// 랜덤한 위치 계산 (현재 위치에서 반경 100 유닛 이내)
+				const float spawnRadius = 100.0f;
+
+				FVector randomOffset
+				(
+					FMath::RandRange(-spawnRadius, spawnRadius),
+					FMath::RandRange(-spawnRadius, spawnRadius),
+					0.0f  // Z축은 0으로 설정하여 같은 평면에 생성
+				);
+
+				FVector spawnLocation = baseLocation + randomOffset;
+
+				// 아이템 생성 (SpawnActorDeferred를 사용하여 BeginPlay 호출 전에 속성 설정 가능)
+				FTransform spawnTransform = FTransform(FRotator::ZeroRotator, spawnLocation);
+				AItem* newItem = GetWorld()->SpawnActorDeferred<AItem>(itemClass, spawnTransform);
+
+				if (newItem != nullptr)
+				{
+					// BeginPlay 호출하여 아이템 생성 완료
+					UGameplayStatics::FinishSpawningActor(newItem, spawnTransform);
+
+					// 디버그 메시지 출력
+					GEngine->AddOnScreenDebugMessage
+					(
+						-1, 5.f, 
+						FColor::Green,
+						FString::Printf(TEXT("Item ID %d spawned at location: %s"), itemId, *spawnLocation.ToString())
+					);
+				}
+
+				else
+					GEngine->AddOnScreenDebugMessage
+					(
+						-1, 5.f,
+						FColor::Red,
+						FString::Printf(TEXT("Failed to spawn item ID %d"), itemId)
+					);
+			}
+
+			// 아이템 클래스를 찾을 수 없는 경우 에러 메시지 출력
+			else
+				GEngine->AddOnScreenDebugMessage
+				(
+					-1, 5.f, 
+					FColor::Red, 
+					FString::Printf(TEXT("Item ID %d not found in idToItem map"), itemId)
+				);
+		}
+	}
 }
 
 // Called every frame
@@ -112,6 +189,8 @@ void AEneny::SetDamage(FVector hitLocation, int damage)
 	{
 		hp = 0;
 		isDead = true;
+
+		Death();
 	}
 
 	FTransform spawnTransform = FTransform(FRotator::ZeroRotator, hitLocation);
