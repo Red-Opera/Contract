@@ -267,7 +267,12 @@ void UPlayerEquidItem::SpawnGrenade()
 
 	// 아이템 스폰
 	if (ClassToSpawn)
+	{
 		currentEquippedItem = SpawnItemAtSocket(ClassToSpawn, AttachSocketName);
+
+		AItem* grenade = Cast<AGrenade>(currentEquippedItem);
+		grenade->SetGetable(false);
+	}
 }
 
 void UPlayerEquidItem::SpawnMolotov()
@@ -309,7 +314,12 @@ void UPlayerEquidItem::SpawnMolotov()
 
 	// 아이템 스폰
 	if (ClassToSpawn)
+	{
 		currentEquippedItem = SpawnItemAtSocket(ClassToSpawn, AttachSocketName);
+
+		AItem* molotov = Cast<AMolotovCocktail>(currentEquippedItem);
+		molotov->SetGetable(false);
+	}
 }
 
 AActor* UPlayerEquidItem::SpawnItemAtSocket(TSubclassOf<AActor> itemClass, FName socketName)

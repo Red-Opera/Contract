@@ -63,6 +63,9 @@ void AMolotovCocktail::OnComponentHit(UPrimitiveComponent* HitComp, AActor* Othe
 	{
 		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString::Printf(TEXT("Molotov Cocktail exploded")));
 
+		// 아이템 메시 제거
+		RemoveItemMesh();
+
 		// 충돌 위치에 화재 액터 생성
 		FVector SpawnLocation = Hit.ImpactPoint;
 		SpawnFireActor(SpawnLocation);
@@ -102,7 +105,7 @@ void AMolotovCocktail::UseItem()
 
 void AMolotovCocktail::AddMolotovCocktail()
 {
-	if (!CheckPlayerIsClose())
+	if (!CheckPlayerIsClose() || !isGetable)
 		return;
 
 	// 플레이어 인벤토리에 수류탄 추가

@@ -18,6 +18,8 @@ void AGrenade::UseItem()
 
 void AGrenade::Explosion()
 {
+	RemoveItemMesh();
+
 	// 폭발 효과를 위한 메쉬 스폰
 	if (explosionMesh)
 	{
@@ -26,7 +28,7 @@ void AGrenade::Explosion()
 		explosionActor = GetWorld()->SpawnActor<AActor>(explosionMesh, spawnLocation, spawnRotation);
 	}
 	
-	GetWorld()->GetTimerManager().SetTimer(timerHandle, this, &AGrenade::RemoveGrenade, 2.2f, false);
+	GetWorld()->GetTimerManager().SetTimer(timerHandle, this, &AGrenade::RemoveGrenade, 5.0f, false);
 }
 
 void AGrenade::RemoveGrenade()
@@ -42,7 +44,7 @@ void AGrenade::RemoveGrenade()
 
 void AGrenade::AddGrenade()
 {
-	if (!CheckPlayerIsClose())
+	if (!CheckPlayerIsClose() || !isGetable)
 		return;
 
 	// 플레이어 인벤토리에 수류탄 추가

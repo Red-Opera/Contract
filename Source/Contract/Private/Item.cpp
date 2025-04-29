@@ -20,6 +20,22 @@ AItem::AItem()
 	playerInventory = Cast<UPlayerInventory>(StaticLoadObject(UPlayerInventory::StaticClass(), nullptr, *assetPath));
 }
 
+void AItem::RemoveItemMesh()
+{
+	if (itemMesh == nullptr)
+	{
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Item mesh does not exist!"));
+		return;
+	}
+
+	// 물리 시뮬레이션 비활성화
+	itemMesh->SetSimulatePhysics(false);
+
+	// 메시 표시 비활성화
+	itemMesh->SetVisibility(false);
+	itemMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+}
+
 void AItem::BeginPlay()
 {
 	Super::BeginPlay();
@@ -73,6 +89,11 @@ bool AItem::CheckPlayerIsClose()
 	float distance = FVector::Dist(position, playerPosition);
 
 	return distance <= interactionDistance;
+}
+
+void AItem::SetGetable(bool getable)
+{
+	this->isGetable = getable;
 }
 
 void AItem::Tick(float DeltaTime)
