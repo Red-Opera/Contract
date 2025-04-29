@@ -105,15 +105,24 @@ void AMolotovCocktail::UseItem()
 
 void AMolotovCocktail::AddMolotovCocktail()
 {
+	// 기본 거리 체크는 여전히 필요
 	if (!CheckPlayerIsClose() || !isGetable)
 		return;
 
-	// 플레이어 인벤토리에 수류탄 추가
+	// 가장 가까운 상호작용 가능한 아이템을 찾기
+	AItem* closestItem = AItem::GetClosestInteractableItem(player);
+
+	// 이 아이템이 가장 가까운 아이템이 아니면 무시
+	if (closestItem != this)
+		return;
+
+	// 플레이어 인벤토리에 화염병 추가
 	playerInventory->items.Add(AMolotovCocktail::StaticClass());
 	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, TEXT("Got a Molotov Cocktail!"));
 
 	Destroy();
 }
+
 
 void AMolotovCocktail::RemoveActor()
 {

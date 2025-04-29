@@ -5,6 +5,8 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Kismet/GameplayStatics.h"
 
+bool AItem::isInteractionInProgress = false;
+
 AItem::AItem()
 {
 	PrimaryActorTick.bCanEverTick = true;
@@ -91,10 +93,81 @@ bool AItem::CheckPlayerIsClose()
 	return distance <= interactionDistance;
 }
 
+float AItem::GetDistanceToPlayer() const
+{
+	if (player == nullptr)
+		return MAX_FLT;
+
+	FVector position = GetActorLocation();
+	FVector playerPosition = player->GetActorLocation();
+
+	return FVector::Dist(position, playerPosition);
+}
+
 void AItem::SetGetable(bool getable)
 {
 	this->isGetable = getable;
 }
+
+AItem* AItem::GetClosestInteractableItem(ACharacter* fromCharacter)
+{
+	if (fromCharacter == nullptr)
+	{
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("FromCharacter is null!"));
+		return nullptr;
+	}
+
+	// 이미 상호작용 처리 중이면 시간 확인 후 처리
+	static float lastInteractionTime = 0.0f;
+	float currentTime = fromCharacter->GetWorld()->GetTimeSeconds();
+
+	if (isInteractionInProgress && currentTime - lastInteractionTime < 0.15f)
+		return nullptr;
+
+	// 모든 Item 액터 찾기
+	TArray<AActor*> foundItems;
+	UGameplayStatics::GetAllActorsOfClass(fromCharacter->GetWorld(), AItem::StaticClass(), foundItems);
+
+	AItem* closestItem = nullptr;
+	float closestDistance = MAX_FLT;
+
+	// 획득 가능하고 거리 내에 있는 가장 가까운 아이템 찾기
+	for (AActor* actor : foundItems)
+	{
+		AItem* item = Cast<AItem>(actor);
+
+		if (item != nullptr && item->isGetable)
+		{
+			float Distance = item->GetDistanceToPlayer();
+
+			if (Distance <= item->interactionDistance && Distance < closestDistance)
+			{
+				closestDistance = Distance;
+				closestItem = item;
+			}
+		}
+	}
+
+	if (closestItem == nullptr)
+		return nullptr;
+
+	// 가장 가까운 아이템이 있으면 상호작용 처리 중으로 설정
+	isInteractionInProgress = true;
+	lastInteractionTime = currentTime;
+
+	// 잠시 후 상호작용 처리 상태 초기화
+	FTimerHandle unlockTimerHandle;
+	fromCharacter->GetWorld()->GetTimerManager().SetTimer
+	(
+		unlockTimerHandle,
+		[]() { isInteractionInProgress = false; },
+		0.15f, // 이전보다 약간 더 긴 딜레이로 조정
+		false
+	);
+
+	return closestItem;
+}
+
 
 void AItem::Tick(float DeltaTime)
 {
