@@ -36,11 +36,19 @@ protected:
 
 	// 화염병 클래스
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Player Equipment")
-	TSubclassOf<AActor> MolotovClass;
+	TSubclassOf<AActor> molotovClass;
+
+	// 소형 힐 팩 클래스
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Player Equipment")
+	TSubclassOf<AActor> smallHealPackClass;
+	
+	// 대형 힐 팩 클래스
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Player Equipment")
+	TSubclassOf<AActor> largeHealPackClass;
 
 	// 아이템을 부착할 소켓 이름
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player Equipment")
-	FName AttachSocketName = FName("index_01_r");
+	FName attachSocketName = FName("index_01_r");
 
 private:
 	// 인벤토리 데이터 로드
@@ -50,11 +58,11 @@ private:
 	void ThrowItemTrigger();
 	void ThrowItem();
 
-	// 수류탄 스폰
-	void SpawnGrenade();
-
-	// 화염병 스폰
-	void SpawnMolotov();
+	
+	void SpawnGrenade();		// 수류탄 스폰
+	void SpawnMolotov();		// 화염병 스폰
+	void SpawnSmallHealPack();	// 소형 힐 팩 스폰
+	void SpawnLargeHealPack();	// 대형 힐 팩 스폰
 
 	class ACharacter* player;
 	class APlayerController* playerController;
@@ -63,7 +71,7 @@ private:
 	class UAnimInstance* playerAnimInstance;			// 플레이어 애니메이션 블루프린트
 
 	// 로드된 인벤토리 데이터 애셋 참조
-	UPlayerInventory* PlayerInventoryData;
+	UPlayerInventory* playerInventoryData;
 
 	// 현재 장착된 아이템
 	UPROPERTY()

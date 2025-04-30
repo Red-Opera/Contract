@@ -1,6 +1,7 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 #include "PlayerEquidItem.h"
+#include "HealPack.h"
 #include "Grenade.h"
 #include "MolotovCocktail.h"
 #include "Item.h"
@@ -40,14 +41,14 @@ void UPlayerEquidItem::BeginPlay()
 					FString::Printf(TEXT("TargetSkeletalMesh Setting Complete: %s"), *targetSkeletalMesh->GetName()));
 
 				// 소켓 존재 여부 확인
-				bool bSocketExists = targetSkeletalMesh->DoesSocketExist(AttachSocketName);
+				bool bSocketExists = targetSkeletalMesh->DoesSocketExist(attachSocketName);
 				GEngine->AddOnScreenDebugMessage(
 					-1,
 					5.f,
 					FColor::Green,
 					FString::Printf(
 						TEXT("Socket '%s' is Exist : %s"),
-						*AttachSocketName.ToString(),
+						*attachSocketName.ToString(),
 						bSocketExists ? TEXT("Yes") : TEXT("No")
 					)
 				);
@@ -100,6 +101,8 @@ void UPlayerEquidItem::BeginPlay()
 
 	playerInputComponent->BindAction(TEXT("Item1"), IE_Pressed, this, &UPlayerEquidItem::SpawnGrenade);
 	playerInputComponent->BindAction(TEXT("Item2"), IE_Pressed, this, &UPlayerEquidItem::SpawnMolotov);
+	playerInputComponent->BindAction(TEXT("SmallHealPack"), IE_Pressed, this, &UPlayerEquidItem::SpawnSmallHealPack);
+	playerInputComponent->BindAction(TEXT("LargeHealPack"), IE_Pressed, this, &UPlayerEquidItem::SpawnLargeHealPack);
 	playerInputComponent->BindAction(TEXT("ThrowItem"), IE_Pressed, this, &UPlayerEquidItem::ThrowItemTrigger);
 }
 
@@ -111,8 +114,8 @@ void UPlayerEquidItem::TickComponent(float DeltaTime, ELevelTick TickType, FActo
 	if (currentEquippedItem)
 	{
 		// 현재 장착된 아이템이 있을 때의 처리
-		FVector socketLocation = targetSkeletalMesh->GetSocketLocation(AttachSocketName);
-		FRotator socketRotation = targetSkeletalMesh->GetSocketRotation(AttachSocketName);
+		FVector socketLocation = targetSkeletalMesh->GetSocketLocation(attachSocketName);
+		FRotator socketRotation = targetSkeletalMesh->GetSocketRotation(attachSocketName);
 		
 		socketLocation -= targetSkeletalMesh->GetUpVector() * 4.0f; // 소켓 위치에 약간의 오프셋 추가 (필요시)
 		socketLocation -= targetSkeletalMesh->GetRightVector() * 9.0f; // 소켓 위치에 약간의 오프셋 추가 (필요시)
@@ -128,7 +131,7 @@ void UPlayerEquidItem::LoadInventoryData()
 {
 	// 비동기 로드 시작
 	if (InventoryDataAsset.IsValid())
-		PlayerInventoryData = InventoryDataAsset.LoadSynchronous();
+		playerInventoryData = InventoryDataAsset.LoadSynchronous();
 
 	else
 		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("InventoryDataAsset is not valid!"));
@@ -212,11 +215,11 @@ void UPlayerEquidItem::ThrowItem()
 bool UPlayerEquidItem::PlayerInventoryDataLoad()
 {
 	// 인벤토리가 로드되지 않았다면 로드
-	if (!PlayerInventoryData)
+	if (playerInventoryData == nullptr)
 	{
 		LoadInventoryData();
 
-		if (!PlayerInventoryData)
+		if (playerInventoryData == nullptr)
 		{
 			GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("InventoryDataAsset is not valid!"));
 			return false;
@@ -234,22 +237,22 @@ void UPlayerEquidItem::SpawnGrenade()
 		return;
 
 	// 인벤토리에 수류탄이 있는지 확인
-	bool bHasGrenade = false;
-	TSubclassOf<AActor> FoundGrenadeClass = nullptr;
+	bool hasGrenade = false;
+	TSubclassOf<AActor> foundGrenadeClass = nullptr;
 
 	// 인벤토리의 아이템 목록 순회
-	for (TSubclassOf<AItem> ItemClass : PlayerInventoryData->items)
+	for (TSubclassOf<AItem> itemClass : playerInventoryData->items)
 	{
-		if (ItemClass && ItemClass->IsChildOf(AGrenade::StaticClass()))
+		if (itemClass != nullptr && itemClass->IsChildOf(AGrenade::StaticClass()))
 		{
-			bHasGrenade = true;
-			FoundGrenadeClass = ItemClass;
+			hasGrenade = true;
+			foundGrenadeClass = itemClass;
 			break;
 		}
 	}
 
 	// 수류탄이 없으면 함수 종료
-	if (!bHasGrenade)
+	if (!hasGrenade)
 	{
 		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Inventory does not have a grenade!"));
 		return;
@@ -263,12 +266,12 @@ void UPlayerEquidItem::SpawnGrenade()
 	}
 
 	// 사용할 클래스 결정 (BP를 사용)
-	TSubclassOf<AActor> ClassToSpawn = GrenadeClass ? GrenadeClass : FoundGrenadeClass;
+	TSubclassOf<AActor> classToSpawn = GrenadeClass ? GrenadeClass : foundGrenadeClass;
 
 	// 아이템 스폰
-	if (ClassToSpawn)
+	if (classToSpawn != nullptr)
 	{
-		currentEquippedItem = SpawnItemAtSocket(ClassToSpawn, AttachSocketName);
+		currentEquippedItem = SpawnItemAtSocket(classToSpawn, attachSocketName);
 
 		AItem* grenade = Cast<AGrenade>(currentEquippedItem);
 		grenade->SetGetable(false);
@@ -285,12 +288,12 @@ void UPlayerEquidItem::SpawnMolotov()
 	TSubclassOf<AActor> FoundMolotovClass = nullptr;
 
 	// 인벤토리의 아이템 목록 순회
-	for (TSubclassOf<AItem> ItemClass : PlayerInventoryData->items)
+	for (TSubclassOf<AItem> itemClass : playerInventoryData->items)
 	{
-		if (ItemClass && ItemClass->IsChildOf(AMolotovCocktail::StaticClass()))
+		if (itemClass != nullptr && itemClass->IsChildOf(AMolotovCocktail::StaticClass()))
 		{
 			bHasMolotov = true;
-			FoundMolotovClass = ItemClass;
+			FoundMolotovClass = itemClass;
 			break;
 		}
 	}
@@ -310,15 +313,113 @@ void UPlayerEquidItem::SpawnMolotov()
 	}
 
 	// 사용할 클래스 결정 (BP를 사용)
-	TSubclassOf<AActor> ClassToSpawn = MolotovClass ? MolotovClass : FoundMolotovClass;
+	TSubclassOf<AActor> classToSpawn = molotovClass ? molotovClass : FoundMolotovClass;
 
 	// 아이템 스폰
-	if (ClassToSpawn)
+	if (classToSpawn != nullptr)
 	{
-		currentEquippedItem = SpawnItemAtSocket(ClassToSpawn, AttachSocketName);
+		currentEquippedItem = SpawnItemAtSocket(classToSpawn, attachSocketName);
 
 		AItem* molotov = Cast<AMolotovCocktail>(currentEquippedItem);
 		molotov->SetGetable(false);
+	}
+}
+
+void UPlayerEquidItem::SpawnSmallHealPack()
+{
+	if (!PlayerInventoryDataLoad())
+		return;
+
+	// 인벤토리에 화염병이 있는지 확인
+	bool hasHealPack = false;
+	TSubclassOf<AActor> foundHealPackClass = nullptr;
+
+	// 인벤토리의 아이템 목록 순회
+	for (TSubclassOf<AItem> itemClass : playerInventoryData->items)
+	{
+		if (itemClass != nullptr && itemClass->IsChildOf(AHealPack::StaticClass()))
+		{
+			hasHealPack = true;
+			foundHealPackClass = itemClass;
+
+			break;
+		}
+	}
+
+	// 힐 팩이 없으면 함수 종료
+	if (!hasHealPack)
+	{
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Inventory does not have a Samll Heal Pack!"));
+
+		return;
+	}
+
+	// 이미 장착된 아이템이 있으면 제거
+	if (currentEquippedItem)
+	{
+		currentEquippedItem->Destroy();
+		currentEquippedItem = nullptr;
+	}
+
+	// 사용할 클래스 결정 (BP를 사용)
+	TSubclassOf<AActor> classToSpawn = smallHealPackClass ? smallHealPackClass : foundHealPackClass;
+
+	// 아이템 스폰
+	if (classToSpawn != nullptr)
+	{
+		currentEquippedItem = SpawnItemAtSocket(classToSpawn, attachSocketName);
+
+		AItem* smallHealPack = Cast<AHealPack>(currentEquippedItem);
+		smallHealPack->SetGetable(false);
+	}
+}
+
+void UPlayerEquidItem::SpawnLargeHealPack()
+{
+	if (!PlayerInventoryDataLoad())
+		return;
+
+	// 인벤토리에 화염병이 있는지 확인
+	bool hasHealPack = false;
+	TSubclassOf<AActor> foundHealPackClass = nullptr;
+
+	// 인벤토리의 아이템 목록 순회
+	for (TSubclassOf<AItem> itemClass : playerInventoryData->items)
+	{
+		if (itemClass != nullptr && itemClass->IsChildOf(AHealPack::StaticClass()))
+		{
+			hasHealPack = true;
+			foundHealPackClass = itemClass;
+
+			break;
+		}
+	}
+
+	// 힐 팩이 없으면 함수 종료
+	if (!hasHealPack)
+	{
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Inventory does not have a Big Heal Pack!"));
+
+		return;
+	}
+
+	// 이미 장착된 아이템이 있으면 제거
+	if (currentEquippedItem)
+	{
+		currentEquippedItem->Destroy();
+		currentEquippedItem = nullptr;
+	}
+
+	// 사용할 클래스 결정 (BP를 사용)
+	TSubclassOf<AActor> classToSpawn = largeHealPackClass ? largeHealPackClass : foundHealPackClass;
+
+	// 아이템 스폰
+	if (classToSpawn != nullptr)
+	{
+		currentEquippedItem = SpawnItemAtSocket(classToSpawn, attachSocketName);
+
+		AItem* largeHealPack = Cast<AHealPack>(currentEquippedItem);
+		largeHealPack->SetGetable(false);
 	}
 }
 
@@ -340,13 +441,14 @@ AActor* UPlayerEquidItem::SpawnItemAtSocket(TSubclassOf<AActor> itemClass, FName
 	FVector socketLocation = targetSkeletalMesh->GetSocketLocation(socketName);
 	FRotator socketRotation = targetSkeletalMesh->GetSocketRotation(socketName);
 
-	UWorld* World = GetWorld();
-	if (!World)
+	UWorld* world = GetWorld();
+
+	if (!world)
 		return nullptr;
 
 	FActorSpawnParameters spawnParams;
 	spawnParams.Owner = GetOwner();
-	AItem* spawnItem = World->SpawnActor<AItem>(itemClass, socketLocation, socketRotation, spawnParams);
+	AItem* spawnItem = world->SpawnActor<AItem>(itemClass, socketLocation, socketRotation, spawnParams);
 
 	if (spawnItem)
 	{
@@ -355,18 +457,16 @@ AActor* UPlayerEquidItem::SpawnItemAtSocket(TSubclassOf<AActor> itemClass, FName
 		spawnItem->SetActorTransform(socketTransform);
 
 		if (spawnItem->AttachToComponent(targetSkeletalMesh, FAttachmentTransformRules::SnapToTargetIncludingScale, socketName))
-		{
 			GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, TEXT("Spawned item at socket!"));
-		}
+		
 		else
-		{
 			GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Failed to attach item to socket!"));
-		}
-
+		
 		spawnItem->itemMesh->SetSimulatePhysics(false);
 		spawnItem->itemMesh->SetEnableGravity(false);
 		spawnItem->itemMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	}
+
 	else
 	{
 		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Failed to spawn item!"));
