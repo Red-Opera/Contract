@@ -20,8 +20,8 @@ void AHealPack::AddHealPack()
         return;
 
     // 플레이어 인벤토리에 힐 아이템 추가
-    playerInventory->items.Add(AHealPack::StaticClass());
-    GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, TEXT("Got a grenade!"));
+    playerInventory->AddItem(healItemID);
+	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, TEXT("Heal Pack added to inventory!"));
 
     Destroy();
 }

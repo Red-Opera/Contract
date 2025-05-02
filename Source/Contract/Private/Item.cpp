@@ -1,6 +1,7 @@
 #include "Item.h"
 #include "PlayerInventory.h"
 #include "PlayerEquidItem.h"
+#include "IDToItem.h"
 
 #include "GameFramework/Character.h"
 #include "GameFramework/CharacterMovementComponent.h"
@@ -18,9 +19,6 @@ AItem::AItem()
 	// mesh 중력 활성화
 	itemMesh->SetSimulatePhysics(true);
 	itemMesh->SetEnableGravity(true);
-
-	FString assetPath = TEXT("DataAsset'/Game/PlayerInventory/PlayerInventory.PlayerInventory'");
-	playerInventory = Cast<UPlayerInventory>(StaticLoadObject(UPlayerInventory::StaticClass(), nullptr, *assetPath));
 }
 
 void AItem::RemoveItemMesh()
@@ -42,6 +40,12 @@ void AItem::RemoveItemMesh()
 void AItem::BeginPlay()
 {
 	Super::BeginPlay();
+
+	FString assetPath = TEXT("DataAsset'/Game/PlayerInventory/PlayerInventory.PlayerInventory'");
+	playerInventory = Cast<UPlayerInventory>(StaticLoadObject(UPlayerInventory::StaticClass(), nullptr, *assetPath));
+	
+	FString idToItemPath = TEXT("DataAsset'/Game/PlayerInventory/IDToDataAsset.IDToDataAsset'");
+	idToItemAsset = Cast<UIDToItem>(StaticLoadObject(UIDToItem::StaticClass(), nullptr, *idToItemPath));
 	
 	player = UGameplayStatics::GetPlayerCharacter(GetWorld(), 0);
 	playerController = GetWorld()->GetFirstPlayerController();

@@ -31,6 +31,10 @@ public:
     // 현재 체력 (임시로 설정한 값, 실제로는 캐릭터에서 가져와야 함)
 	static int currentHealth; 
 
+    // 힐 아이템 ID
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item")
+	int healItemID = 3;
+
 protected:
     virtual void BeginPlay() override;
 

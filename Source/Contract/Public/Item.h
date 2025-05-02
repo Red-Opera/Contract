@@ -47,6 +47,7 @@ protected:
 	class APlayerController* playerController;
 	class UInputComponent* playerInputComponent;
 	class UPlayerInventory* playerInventory;
+	class UIDToItem* idToItemAsset;
 
 	bool isGetable = true;			// 아이템을 획득할 수 있는지 여부
 	bool isPlayerClose = false;

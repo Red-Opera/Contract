@@ -1,5 +1,6 @@
 #include "Grenade.h"
 #include "PlayerInventory.h"
+#include "IDToItem.h"
 
 void AGrenade::BeginPlay()
 {
@@ -57,7 +58,7 @@ void AGrenade::AddGrenade()
 		return;
 
 	// 플레이어 인벤토리에 수류탄 추가
-	playerInventory->items.Add(AGrenade::StaticClass());
+	playerInventory->AddItem(0);
 	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, TEXT("Got a grenade!"));
 
 	Destroy();

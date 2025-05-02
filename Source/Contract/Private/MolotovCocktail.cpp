@@ -119,7 +119,7 @@ void AMolotovCocktail::AddMolotovCocktail()
 		return;
 
 	// 플레이어 인벤토리에 화염병 추가
-	playerInventory->items.Add(AMolotovCocktail::StaticClass());
+	playerInventory->AddItem(1);
 	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, TEXT("Got a Molotov Cocktail!"));
 
 	Destroy();

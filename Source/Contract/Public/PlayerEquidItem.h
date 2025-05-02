@@ -29,7 +29,7 @@ public:
 
 	// 아이템 선택 및 토글 처리 함수 (추가)
 	UFUNCTION(BlueprintCallable, Category = "Player Equipment")
-	void ToggleItemEquip(int itemIndex, TSubclassOf<AActor> itemClass);
+	void ToggleItemEquip(int itemSlotIndex, TSubclassOf<AActor> itemClass);
 
 	// 현재 장착된 아이템 드롭 함수 (추가)
 	UFUNCTION(BlueprintCallable, Category = "Player Equipment")
@@ -43,6 +43,10 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Player Equipment")
 	int GetSelectedItemIndex() const;
 
+	// 갖고 있는 아이템
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Items")
+	TArray<int> itemCount;
+
 protected:
 	virtual void BeginPlay() override;
 
@@ -52,7 +56,7 @@ protected:
 
 	// 수류탄 클래스
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Player Equipment")
-	TSubclassOf<AActor> GrenadeClass;
+	TSubclassOf<AActor> grenadeClass;
 
 	// 화염병 클래스
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Player Equipment")

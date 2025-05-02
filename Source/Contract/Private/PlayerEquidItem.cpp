@@ -243,35 +243,16 @@ void UPlayerEquidItem::SpawnGrenade()
 	if (!PlayerInventoryDataLoad())
 		return;
 
-	// 인벤토리에 수류탄이 있는지 확인
-	bool hasGrenade = false;
-	TSubclassOf<AActor> foundGrenadeClass = nullptr;
-
 	// 인벤토리의 아이템 목록 순회
-	for (TSubclassOf<AItem> itemClass : playerInventoryData->items)
-	{
-		if (itemClass != nullptr && itemClass->IsChildOf(AGrenade::StaticClass()))
-		{
-			hasGrenade = true;
-			foundGrenadeClass = itemClass;
-
-			break;
-		}
-	}
-
-	// 수류탄이 없으면 함수 종료
-	if (!hasGrenade)
+	if (playerInventoryData->itemCount[0] <= 0) 
 	{
 		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Inventory does not have a grenade!"));
 
 		return;
 	}
 
-	// 사용할 클래스 결정
-	TSubclassOf<AActor> classToSpawn = GrenadeClass ? GrenadeClass : foundGrenadeClass;
-
 	// 아이템 토글 처리
-	ToggleItemEquip(4, classToSpawn);
+	ToggleItemEquip(4, grenadeClass);
 }
 
 void UPlayerEquidItem::SpawnMolotov()
@@ -279,35 +260,16 @@ void UPlayerEquidItem::SpawnMolotov()
 	if (!PlayerInventoryDataLoad())
 		return;
 
-	// 인벤토리에 화염병이 있는지 확인
-	bool bHasMolotov = false;
-	TSubclassOf<AActor> FoundMolotovClass = nullptr;
-
 	// 인벤토리의 아이템 목록 순회
-	for (TSubclassOf<AItem> itemClass : playerInventoryData->items)
+	if (playerInventoryData->itemCount[1] <= 0)
 	{
-		if (itemClass != nullptr && itemClass->IsChildOf(AMolotovCocktail::StaticClass()))
-		{
-			bHasMolotov = true;
-			FoundMolotovClass = itemClass;
-
-			break;
-		}
-	}
-
-	// 화염병이 없으면 함수 종료
-	if (!bHasMolotov)
-	{
-		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Inventory does not have a Molotov!"));
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Inventory does not have a Molotov Cocktail!"));
 
 		return;
 	}
 
-	// 사용할 클래스 결정
-	TSubclassOf<AActor> classToSpawn = molotovClass ? molotovClass : FoundMolotovClass;
-
 	// 아이템 토글 처리
-	ToggleItemEquip(5, classToSpawn);
+	ToggleItemEquip(5, molotovClass);
 }
 
 void UPlayerEquidItem::SpawnSmallHealPack()
@@ -315,34 +277,16 @@ void UPlayerEquidItem::SpawnSmallHealPack()
 	if (!PlayerInventoryDataLoad())
 		return;
 
-	// 인벤토리에 힐 팩이 있는지 확인
-	bool hasHealPack = false;
-	TSubclassOf<AActor> foundHealPackClass = nullptr;
-
 	// 인벤토리의 아이템 목록 순회
-	for (TSubclassOf<AItem> itemClass : playerInventoryData->items)
-	{
-		if (itemClass != nullptr && itemClass->IsChildOf(AHealPack::StaticClass()))
-		{
-			hasHealPack = true;
-			foundHealPackClass = itemClass;
-
-			break;
-		}
-	}
-
-	// 힐 팩이 없으면 함수 종료
-	if (!hasHealPack)
+	if (playerInventoryData->itemCount[2] <= 0)
 	{
 		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Inventory does not have a Small Heal Pack!"));
+
 		return;
 	}
 
-	// 사용할 클래스 결정
-	TSubclassOf<AActor> classToSpawn = smallHealPackClass ? smallHealPackClass : foundHealPackClass;
-
 	// 아이템 토글 처리
-	ToggleItemEquip(3, classToSpawn);
+	ToggleItemEquip(3, smallHealPackClass);
 }
 
 void UPlayerEquidItem::SpawnLargeHealPack()
@@ -350,35 +294,16 @@ void UPlayerEquidItem::SpawnLargeHealPack()
 	if (!PlayerInventoryDataLoad())
 		return;
 
-	// 인벤토리에 힐 팩이 있는지 확인
-	bool hasHealPack = false;
-	TSubclassOf<AActor> foundHealPackClass = nullptr;
-
 	// 인벤토리의 아이템 목록 순회
-	for (TSubclassOf<AItem> itemClass : playerInventoryData->items)
+	if (playerInventoryData->itemCount[3] <= 0)
 	{
-		if (itemClass != nullptr && itemClass->IsChildOf(AHealPack::StaticClass()))
-		{
-			hasHealPack = true;
-			foundHealPackClass = itemClass;
-
-			break;
-		}
-	}
-
-	// 힐 팩이 없으면 함수 종료
-	if (!hasHealPack)
-	{
-		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Inventory does not have a Big Heal Pack!"));
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Inventory does not have a grenade!"));
 
 		return;
 	}
 
-	// 사용할 클래스 결정
-	TSubclassOf<AActor> classToSpawn = largeHealPackClass ? largeHealPackClass : foundHealPackClass;
-
 	// 아이템 토글 처리
-	ToggleItemEquip(2, classToSpawn);
+	ToggleItemEquip(2, largeHealPackClass);
 }
 
 AActor* UPlayerEquidItem::SpawnItemAtSocket(TSubclassOf<AActor> itemClass, FName socketName)
@@ -434,10 +359,10 @@ AActor* UPlayerEquidItem::SpawnItemAtSocket(TSubclassOf<AActor> itemClass, FName
 }
 
 // 아이템 선택 및 토글 처리 함수
-void UPlayerEquidItem::ToggleItemEquip(int itemIndex, TSubclassOf<AActor> itemClass)
+void UPlayerEquidItem::ToggleItemEquip(int itemSlotIndex, TSubclassOf<AActor> itemClass)
 {
 	// 현재 같은 아이템 인덱스가 선택되어 있다면 파지 해제
-	if (currentEquippedItem && itemSelectIndex == itemIndex)
+	if (currentEquippedItem && itemSelectIndex == itemSlotIndex)
 	{
 		DropCurrentItem();
 		return;
@@ -465,14 +390,13 @@ void UPlayerEquidItem::ToggleItemEquip(int itemIndex, TSubclassOf<AActor> itemCl
 			item->SetGetable(false);
 		}
 
-		itemSelectIndex = itemIndex;
+		itemSelectIndex = itemSlotIndex;
 
 		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green,
-			FString::Printf(TEXT("Equipped item with index: %d"), itemIndex));
+			FString::Printf(TEXT("Equipped item with index: %d"), itemSlotIndex));
 	}
 }
 
-// 현재 장착된 아이템 드롭 함수
 // 현재 장착된 아이템 제거 함수
 void UPlayerEquidItem::DropCurrentItem()
 {
@@ -484,27 +408,11 @@ void UPlayerEquidItem::DropCurrentItem()
 
 	// 아이템 클래스 확인
 	AItem* item = Cast<AItem>(currentEquippedItem);
+
 	if (!item)
 	{
 		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Failed to cast equipped item!"));
 		return;
-	}
-
-	// 인벤토리에서 해당 타입의 아이템 찾기 및 제거
-	if (PlayerInventoryDataLoad() && playerInventoryData)
-	{
-		TSubclassOf<AItem> itemClass = item->GetClass();
-		for (int i = 0; i < playerInventoryData->items.Num(); i++)
-		{
-			if (playerInventoryData->items[i] == itemClass || playerInventoryData->items[i]->IsChildOf(itemClass))
-			{
-				// 인벤토리에서 아이템 제거
-				playerInventoryData->items.RemoveAt(i);
-				GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow,
-					FString::Printf(TEXT("Removed item of class %s from inventory"), *itemClass->GetName()));
-				break;
-			}
-		}
 	}
 
 	// 현재 장착된 아이템 파괴
