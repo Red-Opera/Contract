@@ -31,7 +31,7 @@ public:
 	virtual void UseItem();							// 아이템 사용 메소드
 
 	// 아이템 Mesh
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Item")
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Item")
 	UStaticMeshComponent* itemMesh;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Interaction")

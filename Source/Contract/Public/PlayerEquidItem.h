@@ -1,3 +1,4 @@
+// Source/Contract/Public/PlayerEquidItem.h 수정
 #pragma once
 
 #include "CoreMinimal.h"
@@ -26,6 +27,22 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player Equipment")
 	int itemSelectIndex = 0;
 
+	// 아이템 선택 및 토글 처리 함수 (추가)
+	UFUNCTION(BlueprintCallable, Category = "Player Equipment")
+	void ToggleItemEquip(int itemIndex, TSubclassOf<AActor> itemClass);
+
+	// 현재 장착된 아이템 드롭 함수 (추가)
+	UFUNCTION(BlueprintCallable, Category = "Player Equipment")
+	void DropCurrentItem();
+
+	// 현재 아이템이 장착되어 있는지 확인하는 함수 (추가)
+	UFUNCTION(BlueprintCallable, Category = "Player Equipment")
+	bool IsItemEquipped() const;
+
+	// 현재 선택된 아이템 인덱스 확인 함수 (추가)
+	UFUNCTION(BlueprintCallable, Category = "Player Equipment")
+	int GetSelectedItemIndex() const;
+
 protected:
 	virtual void BeginPlay() override;
 
@@ -44,7 +61,7 @@ protected:
 	// 소형 힐 팩 클래스
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Player Equipment")
 	TSubclassOf<AActor> smallHealPackClass;
-	
+
 	// 대형 힐 팩 클래스
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Player Equipment")
 	TSubclassOf<AActor> largeHealPackClass;
@@ -61,7 +78,6 @@ private:
 	void ThrowItemTrigger();
 	void ThrowItem();
 
-	
 	void SpawnGrenade();		// 수류탄 스폰
 	void SpawnMolotov();		// 화염병 스폰
 	void SpawnSmallHealPack();	// 소형 힐 팩 스폰
