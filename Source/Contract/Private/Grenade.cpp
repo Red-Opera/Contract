@@ -10,6 +10,8 @@ void AGrenade::BeginPlay()
 
 void AGrenade::UseItem()
 {
+	Super::UseItem();
+
 	// 수류탄 사용 시 폭발 효과를 추가할 수 있습니다.
 	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, TEXT("Grenade used!"));
 

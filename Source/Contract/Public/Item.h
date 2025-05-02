@@ -28,7 +28,7 @@ public:
 	float GetDistanceToPlayer() const;
 
 	virtual void Tick(float DeltaTime) override;
-	virtual void UseItem() {};		// 아이템 사용 메소드
+	virtual void UseItem();							// 아이템 사용 메소드
 
 	// 아이템 Mesh
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Item")

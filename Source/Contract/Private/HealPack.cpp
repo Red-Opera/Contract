@@ -59,6 +59,8 @@ void AHealPack::UseItem()
         return;
     }
 
+    Super::UseItem();
+
     int healAmount = 0;
 
     // 회복 타입에 따라 회복량 계산

@@ -275,6 +275,8 @@ void UPlayerEquidItem::SpawnGrenade()
 
 		AItem* grenade = Cast<AGrenade>(currentEquippedItem);
 		grenade->SetGetable(false);
+
+		itemSelectIndex = 4;
 	}
 }
 
@@ -322,6 +324,8 @@ void UPlayerEquidItem::SpawnMolotov()
 
 		AItem* molotov = Cast<AMolotovCocktail>(currentEquippedItem);
 		molotov->SetGetable(false);
+
+		itemSelectIndex = 5;
 	}
 }
 
@@ -371,6 +375,8 @@ void UPlayerEquidItem::SpawnSmallHealPack()
 
 		AItem* smallHealPack = Cast<AHealPack>(currentEquippedItem);
 		smallHealPack->SetGetable(false);
+
+		itemSelectIndex = 3;
 	}
 }
 
@@ -420,6 +426,8 @@ void UPlayerEquidItem::SpawnLargeHealPack()
 
 		AItem* largeHealPack = Cast<AHealPack>(currentEquippedItem);
 		largeHealPack->SetGetable(false);
+
+		itemSelectIndex = 2;
 	}
 }
 

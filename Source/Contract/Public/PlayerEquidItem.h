@@ -23,6 +23,9 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Player Equipment")
 	AActor* SpawnItemAtSocket(TSubclassOf<AActor> itemClass, FName socketName);
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player Equipment")
+	int itemSelectIndex = 0;
+
 protected:
 	virtual void BeginPlay() override;
 

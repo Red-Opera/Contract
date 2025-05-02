@@ -82,6 +82,8 @@ void AMolotovCocktail::OnComponentHit(UPrimitiveComponent* HitComp, AActor* Othe
 
 void AMolotovCocktail::UseItem()
 {
+	Super::UseItem();
+
 	isUse = true;
 
 	// 화염병 던지기 로직 추가

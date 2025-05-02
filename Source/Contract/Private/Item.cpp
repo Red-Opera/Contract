@@ -1,5 +1,6 @@
 #include "Item.h"
 #include "PlayerInventory.h"
+#include "PlayerEquidItem.h"
 
 #include "GameFramework/Character.h"
 #include "GameFramework/CharacterMovementComponent.h"
@@ -175,3 +176,21 @@ void AItem::Tick(float DeltaTime)
 
 }
 
+void AItem::UseItem()
+{
+	// 플레이어에서 PlayerEquidItem 컴포넌트 가져오기
+	if (player)
+	{
+		UPlayerEquidItem* playerEquidItem = player->FindComponentByClass<UPlayerEquidItem>();
+
+		// itemSelectIndex 값을 0으로 설정
+		if (playerEquidItem)
+			playerEquidItem->itemSelectIndex = 0;
+
+		else
+			GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("PlayerEquidItem component not found!"));
+	}
+
+	else
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Player is null!"));
+}
