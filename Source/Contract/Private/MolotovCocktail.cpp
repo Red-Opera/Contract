@@ -86,23 +86,6 @@ void AMolotovCocktail::UseItem()
 
 	isUse = true;
 
-	// 화염병 던지기 로직 추가
-	//if (itemMesh && isUse)
-	//{
-	//	// 플레이어 전방으로 힘을 가함
-	//	FVector ThrowDirection = player->GetActorForwardVector();
-	//	float ThrowForce = 1500.0f; // 던지는 힘 조절
-	//
-	//	// 물리 시뮬레이션 활성화 확인
-	//	if (!itemMesh->IsSimulatingPhysics())
-	//		itemMesh->SetSimulatePhysics(true);
-	//
-	//	// 화염병에 힘을 가함
-	//	itemMesh->AddImpulse(ThrowDirection * ThrowForce);
-	//
-	//	// 디버그용 메시지
-	//	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, TEXT("Molotov thrown!"));
-	//}
 }
 
 void AMolotovCocktail::AddMolotovCocktail()

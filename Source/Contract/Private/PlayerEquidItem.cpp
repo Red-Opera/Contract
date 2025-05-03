@@ -104,10 +104,12 @@ void UPlayerEquidItem::BeginPlay()
 
 	player->EnableInput(playerController);
 
-	playerInputComponent->BindAction(TEXT("Item1"), IE_Pressed, this, &UPlayerEquidItem::SpawnGrenade);
-	playerInputComponent->BindAction(TEXT("Item2"), IE_Pressed, this, &UPlayerEquidItem::SpawnMolotov);
-	playerInputComponent->BindAction(TEXT("SmallHealPack"), IE_Pressed, this, &UPlayerEquidItem::SpawnSmallHealPack);
-	playerInputComponent->BindAction(TEXT("LargeHealPack"), IE_Pressed, this, &UPlayerEquidItem::SpawnLargeHealPack);
+
+	playerInputComponent->BindAction(TEXT("Key1"), IE_Pressed, this, &UPlayerEquidItem::Press1Key);
+	playerInputComponent->BindAction(TEXT("Key2"), IE_Pressed, this, &UPlayerEquidItem::Press2Key);
+	playerInputComponent->BindAction(TEXT("Key3"), IE_Pressed, this, &UPlayerEquidItem::Press3Key);
+	playerInputComponent->BindAction(TEXT("Key4"), IE_Pressed, this, &UPlayerEquidItem::Press4Key);
+	playerInputComponent->BindAction(TEXT("Key5"), IE_Pressed, this, &UPlayerEquidItem::Press5Key);
 	playerInputComponent->BindAction(TEXT("ThrowItem"), IE_Pressed, this, &UPlayerEquidItem::ThrowItemTrigger);
 }
 
@@ -130,6 +132,48 @@ void UPlayerEquidItem::TickComponent(float DeltaTime, ELevelTick TickType, FActo
 		currentEquippedItem->SetActorRotation(socketRotation);
 		currentEquippedItem->SetActorScale3D(FVector(0.5f)); // 스케일 조정 (필요시)
 	}
+}
+
+void UPlayerEquidItem::Press1Key()
+{
+	pressedKey = 1;
+
+	SpawnSmallHealPack();
+}
+
+void UPlayerEquidItem::Press2Key()
+{
+	pressedKey = 2;
+
+	SpawnLargeHealPack();
+}
+
+void UPlayerEquidItem::Press3Key()
+{
+	pressedKey = 3;
+
+	if (itemSelectIndex != 3)
+		itemSelectIndex = 3;
+
+	else
+	{
+		itemSelectIndex = 0;
+		DropCurrentItem();
+	}
+}
+
+void UPlayerEquidItem::Press4Key()
+{
+	pressedKey = 4;
+
+	SpawnGrenade();
+}
+
+void UPlayerEquidItem::Press5Key()
+{
+	pressedKey = 5;
+
+	SpawnMolotov();
 }
 
 void UPlayerEquidItem::LoadInventoryData()
@@ -274,7 +318,7 @@ void UPlayerEquidItem::SpawnMolotov()
 
 void UPlayerEquidItem::SpawnSmallHealPack()
 {
-	if (!PlayerInventoryDataLoad())
+	if (!PlayerInventoryDataLoad() || itemSelectIndex != 3)
 		return;
 
 	// 인벤토리의 아이템 목록 순회
@@ -286,12 +330,12 @@ void UPlayerEquidItem::SpawnSmallHealPack()
 	}
 
 	// 아이템 토글 처리
-	ToggleItemEquip(3, smallHealPackClass);
+	ToggleItemEquip(6, smallHealPackClass);
 }
 
 void UPlayerEquidItem::SpawnLargeHealPack()
 {
-	if (!PlayerInventoryDataLoad())
+	if (!PlayerInventoryDataLoad() || itemSelectIndex != 3)
 		return;
 
 	// 인벤토리의 아이템 목록 순회
@@ -303,7 +347,7 @@ void UPlayerEquidItem::SpawnLargeHealPack()
 	}
 
 	// 아이템 토글 처리
-	ToggleItemEquip(2, largeHealPackClass);
+	ToggleItemEquip(7, largeHealPackClass);
 }
 
 AActor* UPlayerEquidItem::SpawnItemAtSocket(TSubclassOf<AActor> itemClass, FName socketName)

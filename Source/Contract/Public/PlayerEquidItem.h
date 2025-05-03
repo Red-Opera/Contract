@@ -16,30 +16,30 @@ public:
 
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
-	// 플레이어 입력을 처리하는 함수
+	// 플레이어 입력을 처리하는 메소드
 	UFUNCTION(BlueprintCallable, Category = "Player Equipment")
 	bool PlayerInventoryDataLoad();
 
-	// 아이템 스폰 함수
+	// 아이템 스폰 메소드
 	UFUNCTION(BlueprintCallable, Category = "Player Equipment")
 	AActor* SpawnItemAtSocket(TSubclassOf<AActor> itemClass, FName socketName);
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player Equipment")
 	int itemSelectIndex = 0;
 
-	// 아이템 선택 및 토글 처리 함수 (추가)
+	// 아이템 선택 및 토글 처리 메소드
 	UFUNCTION(BlueprintCallable, Category = "Player Equipment")
 	void ToggleItemEquip(int itemSlotIndex, TSubclassOf<AActor> itemClass);
 
-	// 현재 장착된 아이템 드롭 함수 (추가)
+	// 현재 장착된 아이템 드롭 메소드 
 	UFUNCTION(BlueprintCallable, Category = "Player Equipment")
 	void DropCurrentItem();
 
-	// 현재 아이템이 장착되어 있는지 확인하는 함수 (추가)
+	// 현재 아이템이 장착되어 있는지 확인하는 메소드
 	UFUNCTION(BlueprintCallable, Category = "Player Equipment")
 	bool IsItemEquipped() const;
 
-	// 현재 선택된 아이템 인덱스 확인 함수 (추가)
+	// 현재 선택된 아이템 인덱스 확인 메소드
 	UFUNCTION(BlueprintCallable, Category = "Player Equipment")
 	int GetSelectedItemIndex() const;
 
@@ -75,6 +75,12 @@ protected:
 	FName attachSocketName = FName("index_01_r");
 
 private:
+	void Press1Key();			// 1번 키 입력 처리
+	void Press2Key();			// 2번 키 입력 처리
+	void Press3Key();			// 3번 키 입력 처리
+	void Press4Key();			// 4번 키 입력 처리
+	void Press5Key();			// 5번 키 입력 처리
+
 	// 인벤토리 데이터 로드
 	void LoadInventoryData();
 
@@ -102,4 +108,6 @@ private:
 
 	// 헤더 파일에 타이머 핸들 선언
 	FTimerHandle timerHandle_AutoThrow;
+
+	int pressedKey = 0;	// 키 입력 처리
 };
