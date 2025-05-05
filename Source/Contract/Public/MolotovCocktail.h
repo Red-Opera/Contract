@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 
 #include "CoreMinimal.h"
 #include "Item.h"
@@ -13,27 +13,27 @@ public:
 	AMolotovCocktail();
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Player Equipment")
-	TSubclassOf<AActor> fireMesh;		// ÆøÆÄ ¸Ş½¬
+	TSubclassOf<AActor> fireMesh;		// í­íŒŒ ë©”ì‰¬
 	
-	// Ãæµ¹ ÄÄÆ÷³ÍÆ® Ãß°¡
+	// ì¶©ëŒ ì»´í¬ë„ŒíŠ¸ ì¶”ê°€
 	UPROPERTY(EditAnywhere)
 	class UCapsuleComponent* collisionComponent;
 
 protected:
 	virtual void BeginPlay() override;
-	virtual void UseItem() override;	// ¾ÆÀÌÅÛ »ç¿ë ¸Ş¼Òµå
+	virtual void UseItem() override;	// ì•„ì´í…œ ì‚¬ìš© ë©”ì†Œë“œ
 
 private:
-	void AddMolotovCocktail();			// È­¿°º´À» Ãß°¡ÇÏ´Â ¸Ş¼Òµå
-	void RemoveActor();					// È­¿°º´ Á¦°Å ¸Ş¼Òµå	
-	void SpawnFireActor(const FVector& SpawnLocation);  // È­¿° ¾×ÅÍ »ı¼º ¸Ş¼­µå
+	void AddMolotovCocktail();			// í™”ì—¼ë³‘ì„ ì¶”ê°€í•˜ëŠ” ë©”ì†Œë“œ
+	void RemoveActor();					// í™”ì—¼ë³‘ ì œê±° ë©”ì†Œë“œ	
+	void SpawnFireActor(const FVector& SpawnLocation);  // í™”ì—¼ ì•¡í„° ìƒì„± ë©”ì„œë“œ
 
 	UFUNCTION()
 	void OnComponentHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit);
 
-	class AActor* fireActor;			// ÆøÆÄ ¾×ÅÍ
+	class AActor* fireActor;			// í­íŒŒ ì•¡í„°
 
-	FTimerHandle timerHandle;			// Å¸ÀÌ¸Ó ÇÚµé
+	FTimerHandle timerHandle;			// íƒ€ì´ë¨¸ í•¸ë“¤
 
 	bool isUse;
 };

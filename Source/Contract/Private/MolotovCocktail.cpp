@@ -1,4 +1,4 @@
-#include "MolotovCocktail.h"
+ï»¿#include "MolotovCocktail.h"
 #include "PlayerInventory.h"
 #include "GameFramework/Character.h"
 
@@ -7,7 +7,7 @@
 
 AMolotovCocktail::AMolotovCocktail()
 {
-	// Ãæµ¹ ÄÄÆ÷³ÍÆ® »ı¼º
+	// ì¶©ëŒ ì»´í¬ë„ŒíŠ¸ ìƒì„±
 	collisionComponent = CreateDefaultSubobject<UCapsuleComponent>(TEXT("collisionComponent"));
 	collisionComponent->SetupAttachment(itemMesh);
 }
@@ -18,64 +18,62 @@ void AMolotovCocktail::BeginPlay()
 
 	playerInputComponent->BindAction(TEXT("Interaction"), IE_Pressed, this, &AMolotovCocktail::AddMolotovCocktail);
 
-	// Ãæµ¹ ÄÄÆ÷³ÍÆ® ¼³Á¤
+	// ì¶©ëŒ ì»´í¬ë„ŒíŠ¸ ì„¤ì •
 	if (collisionComponent)
 	{
-		// Hit ÀÌº¥Æ®¿Í Overlap ÀÌº¥Æ® ¸ğµÎ È°¼ºÈ­
+		// Hit ì´ë²¤íŠ¸ì™€ Overlap ì´ë²¤íŠ¸ ëª¨ë‘ í™œì„±í™”
 		collisionComponent->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 		collisionComponent->SetCollisionObjectType(ECollisionChannel::ECC_WorldDynamic);
 
-		// ¸ğµç Ã¤³Î¿¡ ´ëÇØ BlockÀ¸·Î ¼³Á¤ÇÏ°í Æ¯Á¤ Ã¤³Î¸¸ OverlapÀ¸·Î ¼³Á¤
+		// ëª¨ë“  ì±„ë„ì— ëŒ€í•´ Blockìœ¼ë¡œ ì„¤ì •í•˜ê³  íŠ¹ì • ì±„ë„ë§Œ Overlapìœ¼ë¡œ ì„¤ì •
 		collisionComponent->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Block);
 		collisionComponent->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
 
-		collisionComponent->SetNotifyRigidBodyCollision(true); // Hit ÀÌº¥Æ® È°¼ºÈ­
-		collisionComponent->SetGenerateOverlapEvents(true);    // Overlap ÀÌº¥Æ® È°¼ºÈ­
+		collisionComponent->SetNotifyRigidBodyCollision(true); // Hit ì´ë²¤íŠ¸ í™œì„±í™”
+		collisionComponent->SetGenerateOverlapEvents(true);    // Overlap ì´ë²¤íŠ¸ í™œì„±í™”
 
-		// Hit ÀÌº¥Æ® ¹ÙÀÎµù
+		// Hit ì´ë²¤íŠ¸ ë°”ì¸ë”©
 		collisionComponent->OnComponentHit.AddDynamic(this, &AMolotovCocktail::OnComponentHit);
 
-		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, TEXT("Molotov collision setup complete"));
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, TEXT("í™”ì—¼ë³‘ ì¶©ëŒ ì»´í¬ë„ŒíŠ¸ ì„¤ì • ì™„ë£Œ"));
 	}
 
-	// ¾ÆÀÌÅÛ ¸Ş½Ã ¼³Á¤
+	// ì•„ì´í…œ ë©”ì‹œ ì„¤ì •
 	if (itemMesh)
 	{
-		// ¹°¸® ½Ã¹Ä·¹ÀÌ¼Ç È°¼ºÈ­
+		// ë¬¼ë¦¬ ì‹œë®¬ë ˆì´ì…˜ í™œì„±í™”
 		itemMesh->SetSimulatePhysics(true);
 		itemMesh->SetNotifyRigidBodyCollision(true);
 		itemMesh->SetCollisionProfileName(TEXT("PhysicsActor"));
 
-		// Hit ÀÌº¥Æ® ¹ÙÀÎµù
+		// Hit ì´ë²¤íŠ¸ ë°”ì¸ë”©
 		itemMesh->OnComponentHit.AddDynamic(this, &AMolotovCocktail::OnComponentHit);
 
-		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, TEXT("Molotov mesh setup complete"));
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, TEXT("í™”ì—¼ë³‘ ë©”ì‹œ ì„¤ì • ì™„ë£Œ"));
 	}
 
 	isUse = false;
 }
 
-// Hit ÀÌº¥Æ®¸¦ Ã³¸®ÇÏ´Â »õ ÇÔ¼ö Ãß°¡
+// Hit ì´ë²¤íŠ¸ë¥¼ ì²˜ë¦¬í•˜ëŠ” ìƒˆ í•¨ìˆ˜ ì¶”ê°€
 void AMolotovCocktail::OnComponentHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
 {
-	// isUse°¡ trueÀÌ°í, ´Ù¸¥ ¾×ÅÍ¿Í Ãæµ¹ÇßÀ» ¶§¸¸ È­Àç ¾×ÅÍ »ı¼º
+	// isUseê°€ trueì´ê³ , ë‹¤ë¥¸ ì•¡í„°ì™€ ì¶©ëŒí–ˆì„ ë•Œë§Œ í™”ì¬ ì•¡í„° ìƒì„±
 	if (isUse && OtherActor && OtherActor != this)
 	{
-		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString::Printf(TEXT("Molotov Cocktail exploded")));
-
-		// ¾ÆÀÌÅÛ ¸Ş½Ã Á¦°Å
+		// ì•„ì´í…œ ë©”ì‹œ ì œê±°
 		RemoveItemMesh();
 
-		// Ãæµ¹ À§Ä¡¿¡ È­Àç ¾×ÅÍ »ı¼º
+		// ì¶©ëŒ ìœ„ì¹˜ì— í™”ì¬ ì•¡í„° ìƒì„±
 		FVector SpawnLocation = Hit.ImpactPoint;
 		SpawnFireActor(SpawnLocation);
 
 		isUse = false;
 
-		// µğ¹ö±× ¸Ş½ÃÁö Ãâ·Â
-		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString::Printf(TEXT("Molotov Cocktail exploded at %s"), *SpawnLocation.ToString()));
+		// ë””ë²„ê·¸ ë©”ì‹œì§€ ì¶œë ¥
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString::Printf(TEXT("í™”ì—¼ë³‘ ì¶©ëŒ: %s"), *Hit.GetActor()->GetName()));
 
-		// È­¿°º´ ÀÚÃ¼´Â Á¦°Å
+		// í™”ì—¼ë³‘ ìì²´ëŠ” ì œê±°
 		GetWorld()->GetTimerManager().SetTimer(timerHandle, this, &AMolotovCocktail::RemoveActor, 5.0f, false);
 	}
 }
@@ -90,20 +88,20 @@ void AMolotovCocktail::UseItem()
 
 void AMolotovCocktail::AddMolotovCocktail()
 {
-	// ±âº» °Å¸® Ã¼Å©´Â ¿©ÀüÈ÷ ÇÊ¿ä
+	// ê¸°ë³¸ ê±°ë¦¬ ì²´í¬ëŠ” ì—¬ì „íˆ í•„ìš”
 	if (!CheckPlayerIsClose() || !isGetable)
 		return;
 
-	// °¡Àå °¡±î¿î »óÈ£ÀÛ¿ë °¡´ÉÇÑ ¾ÆÀÌÅÛÀ» Ã£±â
+	// ê°€ì¥ ê°€ê¹Œìš´ ìƒí˜¸ì‘ìš© ê°€ëŠ¥í•œ ì•„ì´í…œì„ ì°¾ê¸°
 	AItem* closestItem = AItem::GetClosestInteractableItem(player);
 
-	// ÀÌ ¾ÆÀÌÅÛÀÌ °¡Àå °¡±î¿î ¾ÆÀÌÅÛÀÌ ¾Æ´Ï¸é ¹«½Ã
+	// ì´ ì•„ì´í…œì´ ê°€ì¥ ê°€ê¹Œìš´ ì•„ì´í…œì´ ì•„ë‹ˆë©´ ë¬´ì‹œ
 	if (closestItem != this)
 		return;
 
-	// ÇÃ·¹ÀÌ¾î ÀÎº¥Åä¸®¿¡ È­¿°º´ Ãß°¡
+	// í”Œë ˆì´ì–´ ì¸ë²¤í† ë¦¬ì— í™”ì—¼ë³‘ ì¶”ê°€
 	playerInventory->AddItem(1);
-	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, TEXT("Got a Molotov Cocktail!"));
+	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, TEXT("í™”ì—¼ë³‘ ì¶”ê°€"));
 
 	Destroy();
 }
@@ -122,21 +120,21 @@ void AMolotovCocktail::RemoveActor()
 
 void AMolotovCocktail::SpawnFireActor(const FVector& SpawnLocation)
 {
-	// fireMesh°¡ ¼³Á¤µÇ¾î ÀÖ´ÂÁö È®ÀÎ
+	// fireMeshê°€ ì„¤ì •ë˜ì–´ ìˆëŠ”ì§€ í™•ì¸
 	if (!fireMesh)
 	{
-		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("No explosion mesh class specified!"));
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("í­íŒŒ ë©”ì‰¬ê°€ ì„¤ì •ë˜ì§€ ì•ŠìŒ"));
 		return;
 	}
 
-	// È­Àç ¾×ÅÍ »ı¼º
+	// í™”ì¬ ì•¡í„° ìƒì„±
 	UWorld* World = GetWorld();
 	if (World)
 	{
 		FActorSpawnParameters SpawnParams;
 		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
-		// È­Àç ¾×ÅÍ »ı¼º, ¾à°£ À§·Î ¿Ã·Á¼­ »ı¼º
+		// í™”ì¬ ì•¡í„° ìƒì„±, ì•½ê°„ ìœ„ë¡œ ì˜¬ë ¤ì„œ ìƒì„±
 		FVector AdjustedLocation = SpawnLocation + FVector(0, 0, 10.0f);
 		FRotator SpawnRotation = FRotator::ZeroRotator;
 
@@ -144,11 +142,11 @@ void AMolotovCocktail::SpawnFireActor(const FVector& SpawnLocation)
 
 		if (fireActor)
 		{
-			// È­Àç ¾×ÅÍ »ı¼º ¼º°ø ¸Ş½ÃÁö
+			// í™”ì¬ ì•¡í„° ìƒì„± ì„±ê³µ ë©”ì‹œì§€
 			GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green,
 				FString::Printf(TEXT("Fire actor spawned at %s"), *AdjustedLocation.ToString()));
 
-			// 10ÃÊ ÈÄ¿¡ È­Àç ¾×ÅÍ¿Í ÇÔ²² Á¦°Å
+			// 10ì´ˆ í›„ì— í™”ì¬ ì•¡í„°ì™€ í•¨ê»˜ ì œê±°
 			GetWorld()->GetTimerManager().SetTimer(timerHandle, this, &AMolotovCocktail::RemoveActor, 10.0f, false);
 		}
 	}

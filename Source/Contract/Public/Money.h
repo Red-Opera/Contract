@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 
 #include "CoreMinimal.h"
 #include "Item.h"
@@ -16,7 +16,7 @@ protected:
 	virtual void BeginPlay() override;
 
 private:
-	void AddMoney();				// ÃÑ¾ËÀ» Ãß°¡ÇÏ´Â ¸Ş¼Òµå
+	void AddMoney();				// ì´ì•Œì„ ì¶”ê°€í•˜ëŠ” ë©”ì†Œë“œ
 
 	int addMoney = 100;
 };

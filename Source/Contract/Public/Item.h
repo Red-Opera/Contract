@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
@@ -12,25 +12,25 @@ class CONTRACT_API AItem : public AActor
 public:
 	AItem();
 
-	// ¾ÆÀÌÅÛ Mesh¸¦ Á¦°ÅÇÏ´Â ¸Ş¼Òµå
+	// ì•„ì´í…œ Meshë¥¼ ì œê±°í•˜ëŠ” ë©”ì†Œë“œ
 	UFUNCTION(BlueprintCallable, Category = "Item")
 	void RemoveItemMesh();
 
-	// ¾ÆÀÌÅÛÀ» È¹µæÇÒ ¼ö ÀÖ´ÂÁö ¼³Á¤ÇÏ´Â ¸Ş¼Òµå
+	// ì•„ì´í…œì„ íšë“í•  ìˆ˜ ìˆëŠ”ì§€ ì„¤ì •í•˜ëŠ” ë©”ì†Œë“œ
 	UFUNCTION(BlueprintCallable, Category = "Item")
 	void SetGetable(bool isGetable);
 
-	// ÀÎÅÍ·¢¼ÇÀ¸·Î ¾ÆÀÌÅÛ È¹µæ ½Ã È£ÃâÇÏ´Â °øÅë ¸Ş¼Òµå
+	// ì¸í„°ë™ì…˜ìœ¼ë¡œ ì•„ì´í…œ íšë“ ì‹œ í˜¸ì¶œí•˜ëŠ” ê³µí†µ ë©”ì†Œë“œ
 	UFUNCTION(BlueprintCallable, Category = "Item")
 	static AItem* GetClosestInteractableItem(ACharacter* FromCharacter);
 
-	// ÇÃ·¹ÀÌ¾î¿Í ¾ÆÀÌÅÛ °£ÀÇ °Å¸® È®ÀÎ ¸Ş¼Òµå
+	// í”Œë ˆì´ì–´ì™€ ì•„ì´í…œ ê°„ì˜ ê±°ë¦¬ í™•ì¸ ë©”ì†Œë“œ
 	float GetDistanceToPlayer() const;
 
 	virtual void Tick(float DeltaTime) override;
-	virtual void UseItem();							// ¾ÆÀÌÅÛ »ç¿ë ¸Ş¼Òµå
+	virtual void UseItem();							// ì•„ì´í…œ ì‚¬ìš© ë©”ì†Œë“œ
 
-	// ¾ÆÀÌÅÛ Mesh
+	// ì•„ì´í…œ Mesh
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Item")
 	UStaticMeshComponent* itemMesh;
 
@@ -40,7 +40,7 @@ public:
 protected:
 	virtual void BeginPlay() override;
 
-	// ÇÃ·¹ÀÌ¾î°¡ ¾ÆÀÌÅÛ°ú °¡±î¿îÁö È®ÀÎÇÏ´Â ¸Ş¼Òµå
+	// í”Œë ˆì´ì–´ê°€ ì•„ì´í…œê³¼ ê°€ê¹Œìš´ì§€ í™•ì¸í•˜ëŠ” ë©”ì†Œë“œ
 	bool CheckPlayerIsClose();
 
 	class ACharacter* player;
@@ -49,9 +49,9 @@ protected:
 	class UPlayerInventory* playerInventory;
 	class UIDToItem* idToItemAsset;
 
-	bool isGetable = true;			// ¾ÆÀÌÅÛÀ» È¹µæÇÒ ¼ö ÀÖ´ÂÁö ¿©ºÎ
+	bool isGetable = true;			// ì•„ì´í…œì„ íšë“í•  ìˆ˜ ìˆëŠ”ì§€ ì—¬ë¶€
 	bool isPlayerClose = false;
 
-	// »óÈ£ÀÛ¿ë Ã³¸® ÁßÀÎÁö È®ÀÎÇÏ´Â Á¤Àû º¯¼ö
+	// ìƒí˜¸ì‘ìš© ì²˜ë¦¬ ì¤‘ì¸ì§€ í™•ì¸í•˜ëŠ” ì •ì  ë³€ìˆ˜
 	static bool isInteractionInProgress;
 };

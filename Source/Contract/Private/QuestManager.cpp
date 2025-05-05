@@ -1,4 +1,4 @@
-#include "QuestManager.h"
+ï»¿#include "QuestManager.h"
 #include "ChatUI.h"
 
 #include "Blueprint/UserWidget.h"
@@ -16,35 +16,37 @@ void AQuestManager::BeginPlay()
 {
     Super::BeginPlay();
 
-    // ÇÃ·¹ÀÌ¾î Ä³¸¯ÅÍ °¡Á®¿À±â
+    // í”Œë ˆì´ì–´ ìºë¦­í„° ê°€ì ¸ì˜¤ê¸°
     player = UGameplayStatics::GetPlayerCharacter(GetWorld(), 0);
     playerController = GetWorld()->GetFirstPlayerController();
 
     if (player == nullptr)
     {
-        GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Player does not exist."));
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("í”Œë ˆì´ì–´ ìºë¦­í„°ê°€ ì¡´ì¬í•˜ì§€ ì•ŠìŒ"));
+
         return;
     }
 
     if (playerController == nullptr)
     {
-        GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Player controller does not exist."));
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("í”Œë ˆì´ì–´ ì»¨íŠ¸ë¡¤ëŸ¬ê°€ ì¡´ì¬í•˜ì§€ ì•ŠìŒ"));
+
         return;
     }
 
 	if (chatUIClass == nullptr)
 	{
-		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("ChatUI class is not set."));
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("ChatUI classë¥¼ ì„¤ì •í•˜ì§€ ì•ŠìŒ"));
 
 		return;
 	}
 
-	// ´ëÈ­ UI ÀÎ½ºÅÏ½º »ı¼º
+	// ëŒ€í™” UI ì¸ìŠ¤í„´ìŠ¤ ìƒì„±
     chatUIInstance = CreateWidget<UChatUI>(GetWorld()->GetFirstPlayerController(), chatUIClass);
 
 	if (chatUIInstance == nullptr)
 	{
-		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("ChatUI instance creation failed."));
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("ChatUI instance ìƒì„± ì‹¤íŒ¨"));
 
 		return;
 	}
@@ -53,13 +55,14 @@ void AQuestManager::BeginPlay()
 
     if (playerInputComponent == nullptr)
     {
-        GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Player Input Component does not exist."));
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Player Input Componentê°€ ì¡´ì¬í•˜ì§€ ì•ŠìŒ"));
+
         return;
     }
 
     EnableInput(playerController);
 
-    // »óÈ£ÀÛ¿ë Å° ¹ÙÀÎµù
+    // ìƒí˜¸ì‘ìš© í‚¤ ë°”ì¸ë”©
     playerInputComponent->BindAction("Interaction", IE_Pressed, this, &AQuestManager::InteractWithPlayer);
 }
 
@@ -70,11 +73,11 @@ void AQuestManager::Tick(float DeltaTime)
 
 void AQuestManager::InteractWithPlayer()
 {
-    // ÇÃ·¹ÀÌ¾î°¡ °¡±îÀÌ ÀÖ°í ´ëÈ­ UI°¡ Ç¥½ÃµÇÁö ¾ÊÀº °æ¿ì¿¡¸¸ ´ëÈ­ UI Ç¥½Ã
+    // í”Œë ˆì´ì–´ê°€ ê°€ê¹Œì´ ìˆê³  ëŒ€í™” UIê°€ í‘œì‹œë˜ì§€ ì•Šì€ ê²½ìš°ì—ë§Œ ëŒ€í™” UI í‘œì‹œ
     if (IsPlayerClose() && !isChatUIVisible)
         ShowChatUI();
 
-    // ´ëÈ­ UI°¡ ÀÌ¹Ì Ç¥½ÃµÇ¾î ÀÖ´Â °æ¿ì ¼û±â±â
+    // ëŒ€í™” UIê°€ ì´ë¯¸ í‘œì‹œë˜ì–´ ìˆëŠ” ê²½ìš° ìˆ¨ê¸°ê¸°
     else if (isChatUIVisible)
         HideChatUI();
 }
@@ -88,14 +91,14 @@ bool AQuestManager::IsPlayerClose() const
 
 void AQuestManager::ShowChatUI()
 {
-    // ´ëÈ­ UI°¡ ÀÌ¹Ì Ç¥½ÃµÇ°í ÀÖ´Â °æ¿ì
+    // ëŒ€í™” UIê°€ ì´ë¯¸ í‘œì‹œë˜ê³  ìˆëŠ” ê²½ìš°
     if (isChatUIVisible)
         return;
 
-    // ´ëÈ­ ½ÃÀÛ
+    // ëŒ€í™” ì‹œì‘
     chatUIInstance->StartDialogue();
 
-    // UI Ç¥½Ã
+    // UI í‘œì‹œ
     chatUIInstance->AddToViewport();
     isChatUIVisible = true;
 }
@@ -105,10 +108,10 @@ void AQuestManager::HideChatUI()
     if (!isChatUIVisible)
         return;
 
-    // ´ëÈ­ Á¾·á
+    // ëŒ€í™” ì¢…ë£Œ
     chatUIInstance->StartDialogue();
 
-    // UI Á¦°Å
+    // UI ì œê±°
     chatUIInstance->RemoveFromViewport();
     isChatUIVisible = false;
 }

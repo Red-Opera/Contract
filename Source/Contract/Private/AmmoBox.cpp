@@ -1,4 +1,4 @@
-#include "AmmoBox.h"
+ï»¿#include "AmmoBox.h"
 #include "PlayerInventory.h"
 
 #include "GameFramework/Character.h"
@@ -22,16 +22,16 @@ void AAmmoBox::AddAmmo()
     if (!CheckPlayerIsClose() || !isGetable)
         return;
 
-    // °¡Àå °¡±î¿î »óÈ£ÀÛ¿ë °¡´ÉÇÑ ¾ÆÀÌÅÛÀ» Ã£±â
+    // ê°€ìž¥ ê°€ê¹Œìš´ ìƒí˜¸ìž‘ìš© ê°€ëŠ¥í•œ ì•„ì´í…œì„ ì°¾ê¸°
     AItem* closestItem = AItem::GetClosestInteractableItem(player);
 
-    // ÀÌ ¾ÆÀÌÅÛÀÌ °¡Àå °¡±î¿î ¾ÆÀÌÅÛÀÌ ¾Æ´Ï¸é ¹«½Ã
+    // ì´ ì•„ì´í…œì´ ê°€ìž¥ ê°€ê¹Œìš´ ì•„ì´í…œì´ ì•„ë‹ˆë©´ ë¬´ì‹œ
     if (closestItem != this)
         return;
 
-    // ÇÃ·¹ÀÌ¾î ÀÎº¥Åä¸®¿¡ ÃÑ¾Ë Ãß°¡
+    // í”Œë ˆì´ì–´ ì¸ë²¤í† ë¦¬ì— ì´ì•Œ ì¶”ê°€
     playerInventory->bulletCount += ammoCount;
-    GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, FString::Printf(TEXT("Got a bullet! Current number of bullets: %d"), playerInventory->bulletCount));
+	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, FString::Printf(TEXT("ì´ì•Œ %dê°œ ì¶”ê°€ë¨. í˜„ìž¬ ì´ì•Œ ê°œìˆ˜: %d"), ammoCount, playerInventory->bulletCount));
 
     Destroy();
 }

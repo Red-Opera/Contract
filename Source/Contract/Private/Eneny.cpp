@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+ï»¿// Fill out your copyright notice in the Description page of Project Settings.
 
 
 #include "Eneny.h"
@@ -26,19 +26,19 @@ void AEneny::BeginPlay()
 
 	if (player == nullptr)
 	{
-		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Player does not exist."));
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Playerê°€ ì¡´ì¬í•˜ì§€ ì•ŠìŒ"));
 		return;
 	}
 
 	if (playerController == nullptr)
 	{
-		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("PlayerController does not exist."));
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("PlayerControllerê°€ ì¡´ì¬í•˜ì§€ ì•ŠìŒ"));
 		return;
 	}
 
 	if (damageParticle == nullptr)
 	{
-		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("DamageNiagara does not exist."));
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("DamageNiagaraê°€ ì¡´ì¬í•˜ì§€ ì•ŠìŒ"));
 		return;
 	}
 
@@ -46,7 +46,7 @@ void AEneny::BeginPlay()
 
 	if (inputComponent == nullptr)
 	{
-		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("InputComponent does not exist."));
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("InputComponentê°€ ì¡´ì¬í•˜ì§€ ì•ŠìŒ"));
 		return;
 	}
 
@@ -55,13 +55,13 @@ void AEneny::BeginPlay()
 
 	if (idToItem == nullptr)
 	{
-		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("IDToItem does not exist."));
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("IDToItemê°€ ì¡´ì¬í•˜ì§€ ì•ŠìŒ"));
 		return;
 	}
 
 	EnableInput(playerController);
 
-	// ÀÔ·Â ¹ÙÀÎµù ¼³Á¤  
+	// ì…ë ¥ ë°”ì¸ë”© ì„¤ì •  
 	inputComponent->BindAction(TEXT("GunFire"), IE_Pressed, this, &AEneny::StartFire);
 	inputComponent->BindAction(TEXT("GunFire"), IE_Released, this, &AEneny::StopFire);
 }
@@ -75,10 +75,10 @@ void AEneny::StartFire()
 {
 	isFire = true;
 
-	// Ã³À½ ÇÑ ¹ø Áï½Ã ¹ß»ç  
+	// ì²˜ìŒ í•œ ë²ˆ ì¦‰ì‹œ ë°œì‚¬  
 	Fire();
 
-	// ÀÌÈÄ FireRate °£°İÀ¸·Î Fire() ÇÔ¼ö¸¦ ¹İº¹ È£Ãâ (FireRate´Â ¹ß»ç °£°İ)  
+	// ì´í›„ FireRate ê°„ê²©ìœ¼ë¡œ Fire() í•¨ìˆ˜ë¥¼ ë°˜ë³µ í˜¸ì¶œ (FireRateëŠ” ë°œì‚¬ ê°„ê²©)  
 	GetWorld()->GetTimerManager().SetTimer(TimerHandle_AutoFire, this, &AEneny::Fire, fireRate, true);
 }
 
@@ -86,53 +86,53 @@ void AEneny::StopFire()
 {
 	isFire = false;
 
-	// Å¸ÀÌ¸Ó ÇÚµéÀ» ÀÌ¿ëÇÏ¿© ¹İº¹ È£Ãâ ÁßÁö  
+	// íƒ€ì´ë¨¸ í•¸ë“¤ì„ ì´ìš©í•˜ì—¬ ë°˜ë³µ í˜¸ì¶œ ì¤‘ì§€  
 	GetWorld()->GetTimerManager().ClearTimer(TimerHandle_AutoFire);
 }
 
 void AEneny::Death()
 {
-	// ÀûÀÌ Á×Àº À§Ä¡¸¦ ±âÁØÀ¸·Î ¾ÆÀÌÅÛÀ» ¹èÄ¡
+	// ì ì´ ì£½ì€ ìœ„ì¹˜ë¥¼ ê¸°ì¤€ìœ¼ë¡œ ì•„ì´í…œì„ ë°°ì¹˜
 	FVector baseLocation = GetActorLocation();
 
-	// itemCount ¹è¿­À» ¼øÈ¸ÇÏ¸é¼­ °¢ ¾ÆÀÌÅÛÀ» ¹èÄ¡
+	// itemCount ë°°ì—´ì„ ìˆœíšŒí•˜ë©´ì„œ ê° ì•„ì´í…œì„ ë°°ì¹˜
 	for (int32 itemId = 0; itemId < itemCount.Num(); itemId++)
 	{
-		// ÇØ´ç IDÀÇ ¾ÆÀÌÅÛ °³¼ö¸¸Å­ ¹İº¹
+		// í•´ë‹¹ IDì˜ ì•„ì´í…œ ê°œìˆ˜ë§Œí¼ ë°˜ë³µ
 		for (int32 i = 0; i < itemCount[itemId]; i++)
 		{
-			// idToItem¿¡¼­ ¾ÆÀÌÅÛ Å¬·¡½º °¡Á®¿À±â
+			// idToItemì—ì„œ ì•„ì´í…œ í´ë˜ìŠ¤ ê°€ì ¸ì˜¤ê¸°
 			TSubclassOf<AItem> itemClass = idToItem->intToitems[itemId];
 
 			if (itemClass != nullptr)
 			{
-				// ·£´ıÇÑ À§Ä¡ °è»ê (ÇöÀç À§Ä¡¿¡¼­ ¹İ°æ 100 À¯´Ö ÀÌ³»)
+				// ëœë¤í•œ ìœ„ì¹˜ ê³„ì‚° (í˜„ì¬ ìœ„ì¹˜ì—ì„œ ë°˜ê²½ 100 ìœ ë‹› ì´ë‚´)
 				const float spawnRadius = 100.0f;
 
 				FVector randomOffset
 				(
 					FMath::RandRange(-spawnRadius, spawnRadius),
 					FMath::RandRange(-spawnRadius, spawnRadius),
-					0.0f  // ZÃàÀº 0À¸·Î ¼³Á¤ÇÏ¿© °°Àº Æò¸é¿¡ »ı¼º
+					0.0f  // Zì¶•ì€ 0ìœ¼ë¡œ ì„¤ì •í•˜ì—¬ ê°™ì€ í‰ë©´ì— ìƒì„±
 				);
 
 				FVector spawnLocation = baseLocation + randomOffset;
 
-				// ¾ÆÀÌÅÛ »ı¼º (SpawnActorDeferred¸¦ »ç¿ëÇÏ¿© BeginPlay È£Ãâ Àü¿¡ ¼Ó¼º ¼³Á¤ °¡´É)
+				// ì•„ì´í…œ ìƒì„± (SpawnActorDeferredë¥¼ ì‚¬ìš©í•˜ì—¬ BeginPlay í˜¸ì¶œ ì „ì— ì†ì„± ì„¤ì • ê°€ëŠ¥)
 				FTransform spawnTransform = FTransform(FRotator::ZeroRotator, spawnLocation);
 				AItem* newItem = GetWorld()->SpawnActorDeferred<AItem>(itemClass, spawnTransform);
 
 				if (newItem != nullptr)
 				{
-					// BeginPlay È£ÃâÇÏ¿© ¾ÆÀÌÅÛ »ı¼º ¿Ï·á
+					// BeginPlay í˜¸ì¶œí•˜ì—¬ ì•„ì´í…œ ìƒì„± ì™„ë£Œ
 					UGameplayStatics::FinishSpawningActor(newItem, spawnTransform);
 
-					// µğ¹ö±× ¸Ş½ÃÁö Ãâ·Â
+					// ë””ë²„ê·¸ ë©”ì‹œì§€ ì¶œë ¥
 					GEngine->AddOnScreenDebugMessage
 					(
-						-1, 5.f, 
+						-1, 5.f,
 						FColor::Green,
-						FString::Printf(TEXT("Item ID %d spawned at location: %s"), itemId, *spawnLocation.ToString())
+						FString::Printf(TEXT("Item ID %dê°€ ìœ„ì¹˜ %sì— ìƒì„±ë¨"), itemId, *spawnLocation.ToString())
 					);
 				}
 
@@ -141,17 +141,17 @@ void AEneny::Death()
 					(
 						-1, 5.f,
 						FColor::Red,
-						FString::Printf(TEXT("Failed to spawn item ID %d"), itemId)
+						FString::Printf(TEXT("ì•„ì´í…œ ID %d ìƒì„± ì‹¤íŒ¨"), itemId)
 					);
 			}
 
-			// ¾ÆÀÌÅÛ Å¬·¡½º¸¦ Ã£À» ¼ö ¾ø´Â °æ¿ì ¿¡·¯ ¸Ş½ÃÁö Ãâ·Â
+			// ì•„ì´í…œ í´ë˜ìŠ¤ë¥¼ ì°¾ì„ ìˆ˜ ì—†ëŠ” ê²½ìš° ì—ëŸ¬ ë©”ì‹œì§€ ì¶œë ¥
 			else
 				GEngine->AddOnScreenDebugMessage
 				(
-					-1, 5.f, 
-					FColor::Red, 
-					FString::Printf(TEXT("Item ID %d not found in idToItem map"), itemId)
+					-1, 5.f,
+					FColor::Red,
+					FString::Printf(TEXT("ì•„ì´í…œ ID %dì— ëŒ€í•œ í´ë˜ìŠ¤ê°€ ì¡´ì¬í•˜ì§€ ì•ŠìŒ"), itemId)
 				);
 		}
 	}
@@ -175,11 +175,11 @@ void AEneny::SetDamage(FVector hitLocation, int damage)
 {
 	FString damageString = FString::Printf(TEXT("%d"), damage);
 
-	// ÇöÀç Ã¼·ÂÀÌ 0ÀÌ¸é µ¥¹ÌÁö¸¦ ÁÖÁö ¾ÊÀ½
+	// í˜„ì¬ ì²´ë ¥ì´ 0ì´ë©´ ë°ë¯¸ì§€ë¥¼ ì£¼ì§€ ì•ŠìŒ
 	if (hp <= 0)
 		return;
 
-	// µ¥¹ÌÁö¸¦ ¹ŞÀ½
+	// ë°ë¯¸ì§€ë¥¼ ë°›ìŒ
 	int resultHP = hp - damage;
 
 	if (resultHP > 0)
@@ -196,9 +196,9 @@ void AEneny::SetDamage(FVector hitLocation, int damage)
 	FTransform spawnTransform = FTransform(FRotator::ZeroRotator, hitLocation);
 	AFloatingDamage* newDamageWidget = GetWorld()->SpawnActorDeferred<AFloatingDamage>(damageParticle, spawnTransform);
 
-	// BeginPlay Àü¿¡ damage °ªÀ» ¼³Á¤
+	// BeginPlay ì „ì— damage ê°’ì„ ì„¤ì •
 	newDamageWidget->SetDamageValue(damage);
 
-	// ¾×ÅÍ ½ºÆùÀ» ¸¶¹«¸®ÇÏ¿© BeginPlay°¡ È£ÃâµÇµµ·Ï ÇÔ
+	// ì•¡í„° ìŠ¤í°ì„ ë§ˆë¬´ë¦¬í•˜ì—¬ BeginPlayê°€ í˜¸ì¶œë˜ë„ë¡ í•¨
 	UGameplayStatics::FinishSpawningActor(newDamageWidget, spawnTransform);
 }

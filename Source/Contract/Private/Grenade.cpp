@@ -1,4 +1,4 @@
-#include "Grenade.h"
+ï»¿#include "Grenade.h"
 #include "PlayerInventory.h"
 #include "IDToItem.h"
 
@@ -13,8 +13,8 @@ void AGrenade::UseItem()
 {
 	Super::UseItem();
 
-	// ¼ö·ùÅº »ç¿ë ½Ã Æø¹ß È¿°ú¸¦ Ãß°¡ÇÒ ¼ö ÀÖ½À´Ï´Ù.
-	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, TEXT("Grenade used!"));
+	// ìˆ˜ë¥˜íƒ„ ì‚¬ìš© ì‹œ í­ë°œ íš¨ê³¼ë¥¼ ì¶”ê°€í•  ìˆ˜ ìžˆìŠµë‹ˆë‹¤.
+	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, TEXT("ìˆ˜ë¥˜íƒ„ ì‚¬ìš©!"));
 
 	GetWorld()->GetTimerManager().SetTimer(timerHandle, this, &AGrenade::Explosion, 3.0f, false);
 }
@@ -23,7 +23,7 @@ void AGrenade::Explosion()
 {
 	RemoveItemMesh();
 
-	// Æø¹ß È¿°ú¸¦ À§ÇÑ ¸Þ½¬ ½ºÆù
+	// í­ë°œ íš¨ê³¼ë¥¼ ìœ„í•œ ë©”ì‰¬ ìŠ¤í°
 	if (explosionMesh)
 	{
 		FVector spawnLocation = GetActorLocation();
@@ -50,16 +50,16 @@ void AGrenade::AddGrenade()
 	if (!CheckPlayerIsClose() || !isGetable)
 		return;
 
-	// °¡Àå °¡±î¿î »óÈ£ÀÛ¿ë °¡´ÉÇÑ ¾ÆÀÌÅÛÀ» Ã£±â
+	// ê°€ìž¥ ê°€ê¹Œìš´ ìƒí˜¸ìž‘ìš© ê°€ëŠ¥í•œ ì•„ì´í…œì„ ì°¾ê¸°
 	AItem* closestItem = AItem::GetClosestInteractableItem(player);
 
-	// ÀÌ ¾ÆÀÌÅÛÀÌ °¡Àå °¡±î¿î ¾ÆÀÌÅÛÀÌ ¾Æ´Ï¸é ¹«½Ã
+	// ì´ ì•„ì´í…œì´ ê°€ìž¥ ê°€ê¹Œìš´ ì•„ì´í…œì´ ì•„ë‹ˆë©´ ë¬´ì‹œ
 	if (closestItem != this)
 		return;
 
-	// ÇÃ·¹ÀÌ¾î ÀÎº¥Åä¸®¿¡ ¼ö·ùÅº Ãß°¡
+	// í”Œë ˆì´ì–´ ì¸ë²¤í† ë¦¬ì— ìˆ˜ë¥˜íƒ„ ì¶”ê°€
 	playerInventory->AddItem(0);
-	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, TEXT("Got a grenade!"));
+	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, TEXT("ìˆ˜ë¥˜íƒ„ ì¶”ê°€!"));
 
 	Destroy();
 }

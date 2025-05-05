@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 
 #include "CoreMinimal.h"
 #include "Engine/DataAsset.h"
@@ -12,46 +12,46 @@ class CONTRACT_API UPlayerInventory : public UDataAsset
 	GENERATED_BODY()
 
 public:
-	// ±âº» »ı¼ºÀÚ
+	// ê¸°ë³¸ ìƒì„±ì
 	UPlayerInventory();
 
-	// ¾ÆÀÌÅÛ ID·Î ¾ÆÀÌÅÛ °³¼ö °¡Á®¿À±â
+	// ì•„ì´í…œ IDë¡œ ì•„ì´í…œ ê°œìˆ˜ ê°€ì ¸ì˜¤ê¸°
 	UFUNCTION(BlueprintCallable, Category = "Inventory")
 	int32 GetItemCount(int32 ItemID) const;
 
-	// ¾ÆÀÌÅÛ ID·Î ¾ÆÀÌÅÛ °³¼ö ¼³Á¤ÇÏ±â
+	// ì•„ì´í…œ IDë¡œ ì•„ì´í…œ ê°œìˆ˜ ì„¤ì •í•˜ê¸°
 	UFUNCTION(BlueprintCallable, Category = "Inventory")
 	void SetItemCount(int32 ItemID, int32 Count);
 
-	// ¾ÆÀÌÅÛ ID·Î ¾ÆÀÌÅÛ Ãß°¡ÇÏ±â
+	// ì•„ì´í…œ IDë¡œ ì•„ì´í…œ ì¶”ê°€í•˜ê¸°
 	UFUNCTION(BlueprintCallable, Category = "Inventory")
 	void AddItem(int32 ItemID, int32 Count = 1);
 
-	// ¾ÆÀÌÅÛ ID·Î ¾ÆÀÌÅÛ Á¦°ÅÇÏ±â
+	// ì•„ì´í…œ IDë¡œ ì•„ì´í…œ ì œê±°í•˜ê¸°
 	UFUNCTION(BlueprintCallable, Category = "Inventory")
 	bool RemoveItem(int32 ItemID, int32 Count = 1);
 
-	// ¾ÆÀÌÅÛ ID¸¦ Å¬·¡½º·Î º¯È¯
+	// ì•„ì´í…œ IDë¥¼ í´ë˜ìŠ¤ë¡œ ë³€í™˜
 	UFUNCTION(BlueprintCallable, Category = "Inventory")
 	TSubclassOf<AItem> GetItemClassByID(int32 ItemID) const;
 
-	// ¾ÆÀÌÅÛ Å¬·¡½º¸¦ ID·Î º¯È¯
+	// ì•„ì´í…œ í´ë˜ìŠ¤ë¥¼ IDë¡œ ë³€í™˜
 	UFUNCTION(BlueprintCallable, Category = "Inventory")
 	int32 GetItemIDByClass(TSubclassOf<AItem> itemClass) const;
 
-	// ¾ÆÀÌÅÛ ¸ÅÇÎ µ¥ÀÌÅÍ ¾Ö¼Â ÂüÁ¶
+	// ì•„ì´í…œ ë§¤í•‘ ë°ì´í„° ì• ì…‹ ì°¸ì¡°
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Inventory")
 	TSoftObjectPtr<UIDToItem> idToItemAsset;
 
-	// ¾ÆÀÌÅÛ °³¼ö ¸Ê (¾ÆÀÌÅÛ ID¸¦ Å°·Î »ç¿ë)
+	// ì•„ì´í…œ ê°œìˆ˜ ë§µ (ì•„ì´í…œ IDë¥¼ í‚¤ë¡œ ì‚¬ìš©)
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Inventory")
 	TMap<int32, int32> itemCount;
 
-	// ÃÑ¾Ë °³¼ö
+	// ì´ì•Œ ê°œìˆ˜
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bullet")
 	int32 bulletCount = 0;
 
-	// µ· °³¼ö
+	// ëˆ ê°œìˆ˜
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bullet")
 	int32 money = 0;
 };

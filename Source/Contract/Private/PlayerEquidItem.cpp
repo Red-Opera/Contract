@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+ï»¿// Fill out your copyright notice in the Description page of Project Settings.
 
 #include "PlayerEquidItem.h"
 #include "HealPack.h"
@@ -26,26 +26,26 @@ void UPlayerEquidItem::BeginPlay()
 {
 	Super::BeginPlay();
 
-	// ÀÎº¥Åä¸® µ¥ÀÌÅÍ ·Îµå
+	// ì¸ë²¤í† ë¦¬ ë°ì´í„° ë¡œë“œ
 	LoadInventoryData();
 
-	// ¼ÒÀ¯ÀÚ°¡ CharacterÀÎ °æ¿ì ÀÔ·Â ¼³Á¤
+	// ì†Œìœ ìê°€ Characterì¸ ê²½ìš° ì…ë ¥ ì„¤ì •
 	ACharacter* ownerCharacter = Cast<ACharacter>(GetOwner());
 
 	if (ownerCharacter)
 	{
-		// ±âº»ÀûÀ¸·Î Ä³¸¯ÅÍÀÇ ¸Ş½Ã ÄÄÆ÷³ÍÆ®¸¦ Å¸°ÙÀ¸·Î ¼³Á¤
+		// ê¸°ë³¸ì ìœ¼ë¡œ ìºë¦­í„°ì˜ ë©”ì‹œ ì»´í¬ë„ŒíŠ¸ë¥¼ íƒ€ê²Ÿìœ¼ë¡œ ì„¤ì •
 		if (!targetSkeletalMesh)
 		{
 			targetSkeletalMesh = ownerCharacter->GetMesh();
 
-			// TargetSkeletalMesh ¼³Á¤ ¿©ºÎ¸¦ µğ¹ö±× ¸Ş½ÃÁö·Î È®ÀÎ
+			// TargetSkeletalMesh ì„¤ì • ì—¬ë¶€ë¥¼ ë””ë²„ê·¸ ë©”ì‹œì§€ë¡œ í™•ì¸
 			if (targetSkeletalMesh)
 			{
 				GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green,
-					FString::Printf(TEXT("TargetSkeletalMesh Setting Complete: %s"), *targetSkeletalMesh->GetName()));
+					FString::Printf(TEXT("íƒ€ê²Ÿ ìŠ¤ì¼ˆë ˆíƒˆ ë©”ì‹œ ì„¤ì •ë¨: %s"), *targetSkeletalMesh->GetName()));
 
-				// ¼ÒÄÏ Á¸Àç ¿©ºÎ È®ÀÎ
+				// ì†Œì¼“ ì¡´ì¬ ì—¬ë¶€ í™•ì¸
 				bool bSocketExists = targetSkeletalMesh->DoesSocketExist(attachSocketName);
 				GEngine->AddOnScreenDebugMessage(
 					-1,
@@ -60,25 +60,25 @@ void UPlayerEquidItem::BeginPlay()
 			}
 
 			else
-				GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString::Printf(TEXT("TargetSkeletalMesh Not Complete: %s"), *targetSkeletalMesh->GetName()));
+				GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString::Printf(TEXT("íƒ€ê²Ÿ ìŠ¤ì¼ˆë ˆíƒˆ ë©”ì‹œê°€ null")));
 		}
 	}
 
 	else
-		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("This is not Character Type. TargetSkeletalMesh Setting Disable!"));
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("ì†Œìœ ìê°€ ìºë¦­í„°ê°€ ì•„ë‹˜"));
 
 	player = UGameplayStatics::GetPlayerCharacter(GetWorld(), 0);
 	playerController = GetWorld()->GetFirstPlayerController();
 
 	if (player == nullptr)
 	{
-		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Player does not exist."));
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Playerê°€ ì¡´ì¬í•˜ì§€ ì•ŠìŒ"));
 		return;
 	}
 
 	if (playerController == nullptr)
 	{
-		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Player controller does not exist."));
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Player controllerê°€ ì¡´ì¬í•˜ì§€ ì•ŠìŒ"));
 		return;
 	}
 
@@ -86,21 +86,21 @@ void UPlayerEquidItem::BeginPlay()
 
 	if (playerInputComponent == nullptr)
 	{
-		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Player Input Component does not exist."));
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Player Input Componentê°€ ì¡´ì¬í•˜ì§€ ì•ŠìŒ"));
 		return;
 	}
 
-	// ÇÃ·¹ÀÌ¾î ¾Ö´Ï¸ŞÀÌ¼Ç °¡Á®¿È
+	// í”Œë ˆì´ì–´ ì• ë‹ˆë©”ì´ì…˜ ê°€ì ¸ì˜´
 	playerAnimInstance = targetSkeletalMesh->GetAnimInstance();
 
 	if (playerAnimInstance)
 	{
 		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green,
-			FString::Printf(TEXT("Player Animation Instance: %s"), *playerAnimInstance->GetName()));
+			FString::Printf(TEXT("Player ì• ë‹ˆë©”ì´ì…˜ ì¸ìŠ¤í„´ìŠ¤ ì„¤ì •ë¨: %s"), *playerAnimInstance->GetName()));
 	}
 
 	else
-		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Player Animation Instance is null."));
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Player Animation Instanceê°€ null"));
 
 	player->EnableInput(playerController);
 
@@ -120,17 +120,17 @@ void UPlayerEquidItem::TickComponent(float DeltaTime, ELevelTick TickType, FActo
 
 	if (currentEquippedItem)
 	{
-		// ÇöÀç ÀåÂøµÈ ¾ÆÀÌÅÛÀÌ ÀÖÀ» ¶§ÀÇ Ã³¸®
+		// í˜„ì¬ ì¥ì°©ëœ ì•„ì´í…œì´ ìˆì„ ë•Œì˜ ì²˜ë¦¬
 		FVector socketLocation = targetSkeletalMesh->GetSocketLocation(attachSocketName);
 		FRotator socketRotation = targetSkeletalMesh->GetSocketRotation(attachSocketName);
 		
-		socketLocation -= targetSkeletalMesh->GetUpVector() * 4.0f; // ¼ÒÄÏ À§Ä¡¿¡ ¾à°£ÀÇ ¿ÀÇÁ¼Â Ãß°¡ (ÇÊ¿ä½Ã)
-		socketLocation -= targetSkeletalMesh->GetRightVector() * 9.0f; // ¼ÒÄÏ À§Ä¡¿¡ ¾à°£ÀÇ ¿ÀÇÁ¼Â Ãß°¡ (ÇÊ¿ä½Ã)
+		socketLocation -= targetSkeletalMesh->GetUpVector() * 4.0f; // ì†Œì¼“ ìœ„ì¹˜ì— ì•½ê°„ì˜ ì˜¤í”„ì…‹ ì¶”ê°€ (í•„ìš”ì‹œ)
+		socketLocation -= targetSkeletalMesh->GetRightVector() * 9.0f; // ì†Œì¼“ ìœ„ì¹˜ì— ì•½ê°„ì˜ ì˜¤í”„ì…‹ ì¶”ê°€ (í•„ìš”ì‹œ)
 
-		// ¼ÒÄÏ À§Ä¡¿Í È¸ÀüÀ¸·Î ¾ÆÀÌÅÛ À§Ä¡ ¾÷µ¥ÀÌÆ®
+		// ì†Œì¼“ ìœ„ì¹˜ì™€ íšŒì „ìœ¼ë¡œ ì•„ì´í…œ ìœ„ì¹˜ ì—…ë°ì´íŠ¸
 		currentEquippedItem->SetActorLocation(socketLocation);
 		currentEquippedItem->SetActorRotation(socketRotation);
-		currentEquippedItem->SetActorScale3D(FVector(0.5f)); // ½ºÄÉÀÏ Á¶Á¤ (ÇÊ¿ä½Ã)
+		currentEquippedItem->SetActorScale3D(FVector(0.5f)); // ìŠ¤ì¼€ì¼ ì¡°ì • (í•„ìš”ì‹œ)
 	}
 }
 
@@ -178,32 +178,32 @@ void UPlayerEquidItem::Press5Key()
 
 void UPlayerEquidItem::LoadInventoryData()
 {
-	// ºñµ¿±â ·Îµå ½ÃÀÛ
+	// ë¹„ë™ê¸° ë¡œë“œ ì‹œì‘
 	if (InventoryDataAsset.IsValid())
 		playerInventoryData = InventoryDataAsset.LoadSynchronous();
 
 	else
-		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("InventoryDataAsset is not valid!"));
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("InventoryDataAssetì´ ìœ íš¨í•˜ì§€ ì•ŠìŒ"));
 }
 
 void UPlayerEquidItem::ThrowItemTrigger()
 {
 	if (!currentEquippedItem)
 	{
-		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("No item equipped!"));
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("ì•„ì´í…œì´ ì¥ì°©ë˜ì–´ ìˆì§€ ì•ŠìŒ"));
 
 		return;
 	}
 
-	// ¾Ö´Ï¸ŞÀÌ¼Ç isThrow bool º¯¼ö true·Î ¼³Á¤
+	// ì• ë‹ˆë©”ì´ì…˜ isThrow bool ë³€ìˆ˜ trueë¡œ ì„¤ì •
 	FBoolProperty* boolProp = FindFProperty<FBoolProperty>(playerAnimInstance->GetClass(), TEXT("isThrow"));
 
 	if (boolProp)
 	{
 		boolProp->SetPropertyValue_InContainer(playerAnimInstance, true);
-		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, TEXT("Throw animation triggered!"));
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, TEXT("ë˜ì§€ëŠ” ì• ë‹ˆë©”ì´ì…˜ ì‹œì‘!"));
 
-		// ´ÙÀ½ ÇÁ·¹ÀÓ¿¡ false·Î ¼³Á¤
+		// ë‹¤ìŒ í”„ë ˆì„ì— falseë¡œ ì„¤ì •
 		FTimerHandle timerHandle;
 		player->GetWorld()->GetTimerManager().SetTimer(timerHandle, [this]()
 			{
@@ -212,7 +212,7 @@ void UPlayerEquidItem::ThrowItemTrigger()
 				if (boolProp)
 				{
 					boolProp->SetPropertyValue_InContainer(playerAnimInstance, false);
-					GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, TEXT("Throw animation reset!"));
+					GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, TEXT("ë˜ì§€ëŠ” ì• ë‹ˆë©”ì´ì…˜ ì¢…ë£Œ!"));
 				}
 			},
 			0.1f,
@@ -220,7 +220,7 @@ void UPlayerEquidItem::ThrowItemTrigger()
 	}
 
 	else
-		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("isThrow property not found!"));
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("isThrow ë³€ìˆ˜ë¥¼ ì°¾ì„ ìˆ˜ ì—†ìŒ"));
 
 	GetWorld()->GetTimerManager().SetTimer(timerHandle_AutoThrow, this, &UPlayerEquidItem::ThrowItem, 0.79f, false);
 }
@@ -232,7 +232,7 @@ void UPlayerEquidItem::ThrowItem()
 	currentEquippedItem->SetActorRotation(throwDirection.Rotation());
 	currentEquippedItem->DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
 	
-	// ¹°¸® ½Ã¹Ä·¹ÀÌ¼Ç È°¼ºÈ­
+	// ë¬¼ë¦¬ ì‹œë®¬ë ˆì´ì…˜ í™œì„±í™”
 	UPrimitiveComponent* itemMesh = Cast<UPrimitiveComponent>(currentEquippedItem->GetRootComponent());
 
 	if (itemMesh)
@@ -241,37 +241,37 @@ void UPlayerEquidItem::ThrowItem()
 		itemMesh->SetEnableGravity(true);
 		itemMesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 
-		float throwForce = 1500.0f; // ´øÁö´Â ÈûÀÇ °­µµ¸¦ Á¶ÀıÇÏ´Â °ª
+		float throwForce = 1500.0f; // ë˜ì§€ëŠ” í˜ì˜ ê°•ë„ë¥¼ ì¡°ì ˆí•˜ëŠ” ê°’
 		itemMesh->AddImpulse(throwDirection * throwForce);
 
 		GEngine->AddOnScreenDebugMessage
 		(
 			-1, 5.f, FColor::Green, FString::Printf
 				(
-					TEXT("Throwing item with force: %f in direction: %s"),
+					TEXT("ë˜ì§€ëŠ” í˜ : %f, ë°©í–¥: %s"),
 					throwForce, 
 					*throwDirection.ToString()
 				)
 		);
 	}
 
-	// ¾ÆÀÌÅÛ »ç¿ë
+	// ì•„ì´í…œ ì‚¬ìš©
 	AItem* item = Cast<AItem>(currentEquippedItem);
 	item->UseItem();
 
-	currentEquippedItem = nullptr; // ÀåÂøµÈ ¾ÆÀÌÅÛ ÃÊ±âÈ­
+	currentEquippedItem = nullptr; // ì¥ì°©ëœ ì•„ì´í…œ ì´ˆê¸°í™”
 }
 
 bool UPlayerEquidItem::PlayerInventoryDataLoad()
 {
-	// ÀÎº¥Åä¸®°¡ ·ÎµåµÇÁö ¾Ê¾Ò´Ù¸é ·Îµå
+	// ì¸ë²¤í† ë¦¬ê°€ ë¡œë“œë˜ì§€ ì•Šì•˜ë‹¤ë©´ ë¡œë“œ
 	if (playerInventoryData == nullptr)
 	{
 		LoadInventoryData();
 
 		if (playerInventoryData == nullptr)
 		{
-			GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("InventoryDataAsset is not valid!"));
+			GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("InventoryDataAssetì´ ìœ íš¨í•˜ì§€ ì•ŠìŒ"));
 
 			return false;
 		}
@@ -287,15 +287,15 @@ void UPlayerEquidItem::SpawnGrenade()
 	if (!PlayerInventoryDataLoad())
 		return;
 
-	// ÀÎº¥Åä¸®ÀÇ ¾ÆÀÌÅÛ ¸ñ·Ï ¼øÈ¸
+	// ì¸ë²¤í† ë¦¬ì˜ ì•„ì´í…œ ëª©ë¡ ìˆœíšŒ
 	if (playerInventoryData->itemCount[0] <= 0) 
 	{
-		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Inventory does not have a grenade!"));
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Inventoryê°€ ìˆ˜ë¥˜íƒ„ì„ ê°€ì§€ê³  ìˆì§€ ì•ŠìŒ!"));
 
 		return;
 	}
 
-	// ¾ÆÀÌÅÛ Åä±Û Ã³¸®
+	// ì•„ì´í…œ í† ê¸€ ì²˜ë¦¬
 	ToggleItemEquip(4, grenadeClass);
 }
 
@@ -304,15 +304,15 @@ void UPlayerEquidItem::SpawnMolotov()
 	if (!PlayerInventoryDataLoad())
 		return;
 
-	// ÀÎº¥Åä¸®ÀÇ ¾ÆÀÌÅÛ ¸ñ·Ï ¼øÈ¸
+	// ì¸ë²¤í† ë¦¬ì˜ ì•„ì´í…œ ëª©ë¡ ìˆœíšŒ
 	if (playerInventoryData->itemCount[1] <= 0)
 	{
-		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Inventory does not have a Molotov Cocktail!"));
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Inventoryê°€ í™”ì—¼ë³‘ì„ ê°€ì§€ê³  ìˆì§€ ì•ŠìŒ!"));
 
 		return;
 	}
 
-	// ¾ÆÀÌÅÛ Åä±Û Ã³¸®
+	// ì•„ì´í…œ í† ê¸€ ì²˜ë¦¬
 	ToggleItemEquip(5, molotovClass);
 }
 
@@ -321,15 +321,15 @@ void UPlayerEquidItem::SpawnSmallHealPack()
 	if (!PlayerInventoryDataLoad() || itemSelectIndex != 3)
 		return;
 
-	// ÀÎº¥Åä¸®ÀÇ ¾ÆÀÌÅÛ ¸ñ·Ï ¼øÈ¸
+	// ì¸ë²¤í† ë¦¬ì˜ ì•„ì´í…œ ëª©ë¡ ìˆœíšŒ
 	if (playerInventoryData->itemCount[2] <= 0)
 	{
-		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Inventory does not have a Small Heal Pack!"));
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Inventoryê°€ ì†Œí˜• í íŒ©ì„ ê°€ì§€ê³  ìˆì§€ ì•ŠìŒ!"));
 
 		return;
 	}
 
-	// ¾ÆÀÌÅÛ Åä±Û Ã³¸®
+	// ì•„ì´í…œ í† ê¸€ ì²˜ë¦¬
 	ToggleItemEquip(6, smallHealPackClass);
 }
 
@@ -338,15 +338,15 @@ void UPlayerEquidItem::SpawnLargeHealPack()
 	if (!PlayerInventoryDataLoad() || itemSelectIndex != 3)
 		return;
 
-	// ÀÎº¥Åä¸®ÀÇ ¾ÆÀÌÅÛ ¸ñ·Ï ¼øÈ¸
+	// ì¸ë²¤í† ë¦¬ì˜ ì•„ì´í…œ ëª©ë¡ ìˆœíšŒ
 	if (playerInventoryData->itemCount[3] <= 0)
 	{
-		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Inventory does not have a grenade!"));
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Inventoryê°€ ëŒ€í˜• í íŒ©ì„ ê°€ì§€ê³  ìˆì§€ ì•ŠìŒ!"));
 
 		return;
 	}
 
-	// ¾ÆÀÌÅÛ Åä±Û Ã³¸®
+	// ì•„ì´í…œ í† ê¸€ ì²˜ë¦¬
 	ToggleItemEquip(7, largeHealPackClass);
 }
 
@@ -354,17 +354,17 @@ AActor* UPlayerEquidItem::SpawnItemAtSocket(TSubclassOf<AActor> itemClass, FName
 {
 	if (!targetSkeletalMesh)
 	{
-		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Target Skeletal Mesh is not valid!"));
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Target Skeletal Meshì´ ìœ íš¨í•˜ì§€ ì•ŠìŒ"));
 		return nullptr;
 	}
 
 	if (!itemClass)
 	{
-		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Item Class is not valid!"));
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Item Classê°€ ìœ íš¨í•˜ì§€ ì•ŠìŒ"));
 		return nullptr;
 	}
 
-	// ¿ùµå¿¡¼­ ¼ÒÄÏÀÇ À§Ä¡¿Í È¸Àü Á¤º¸ °¡Á®¿À±â
+	// ì›”ë“œì—ì„œ ì†Œì¼“ì˜ ìœ„ì¹˜ì™€ íšŒì „ ì •ë³´ ê°€ì ¸ì˜¤ê¸°
 	FVector socketLocation = targetSkeletalMesh->GetSocketLocation(socketName);
 	FRotator socketRotation = targetSkeletalMesh->GetSocketRotation(socketName);
 
@@ -379,15 +379,15 @@ AActor* UPlayerEquidItem::SpawnItemAtSocket(TSubclassOf<AActor> itemClass, FName
 
 	if (spawnItem)
 	{
-		// ¼ÒÄÏÀÇ Æ®·£½ºÆûÀ» Àû¿ëÇÏ¿© ¹èÄ¡ÇÑ ÈÄ ºÎÂø
+		// ì†Œì¼“ì˜ íŠ¸ëœìŠ¤í¼ì„ ì ìš©í•˜ì—¬ ë°°ì¹˜í•œ í›„ ë¶€ì°©
 		FTransform socketTransform = FTransform(socketRotation, socketLocation);
 		spawnItem->SetActorTransform(socketTransform);
 
 		if (spawnItem->AttachToComponent(targetSkeletalMesh, FAttachmentTransformRules::SnapToTargetIncludingScale, socketName))
-			GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, TEXT("Spawned item at socket!"));
+			GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, TEXT("ì•„ì´í…œì´ ì†Œì¼“ì— ë¶€ì°©ë¨!"));
 		
 		else
-			GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Failed to attach item to socket!"));
+			GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("ì•„ì´í…œì´ ì†Œì¼“ì— ë¶€ì°©ë˜ì§€ ì•ŠìŒ!"));
 		
 		spawnItem->itemMesh->SetSimulatePhysics(false);
 		spawnItem->itemMesh->SetEnableGravity(false);
@@ -395,35 +395,33 @@ AActor* UPlayerEquidItem::SpawnItemAtSocket(TSubclassOf<AActor> itemClass, FName
 	}
 
 	else
-	{
-		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Failed to spawn item!"));
-	}
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("ì•„ì´í…œ ìŠ¤í° ì‹¤íŒ¨!"));
 
 	return spawnItem;
 }
 
-// ¾ÆÀÌÅÛ ¼±ÅÃ ¹× Åä±Û Ã³¸® ÇÔ¼ö
+// ì•„ì´í…œ ì„ íƒ ë° í† ê¸€ ì²˜ë¦¬ í•¨ìˆ˜
 void UPlayerEquidItem::ToggleItemEquip(int itemSlotIndex, TSubclassOf<AActor> itemClass)
 {
-	// ÇöÀç °°Àº ¾ÆÀÌÅÛ ÀÎµ¦½º°¡ ¼±ÅÃµÇ¾î ÀÖ´Ù¸é ÆÄÁö ÇØÁ¦
+	// í˜„ì¬ ê°™ì€ ì•„ì´í…œ ì¸ë±ìŠ¤ê°€ ì„ íƒë˜ì–´ ìˆë‹¤ë©´ íŒŒì§€ í•´ì œ
 	if (currentEquippedItem && itemSelectIndex == itemSlotIndex)
 	{
 		DropCurrentItem();
 		return;
 	}
 
-	// ÀÎº¥Åä¸® µ¥ÀÌÅÍ È®ÀÎ
+	// ì¸ë²¤í† ë¦¬ ë°ì´í„° í™•ì¸
 	if (!PlayerInventoryDataLoad())
 		return;
 
-	// ÀÌ¹Ì ÀåÂøµÈ ¾ÆÀÌÅÛÀÌ ÀÖÀ¸¸é Á¦°Å
+	// ì´ë¯¸ ì¥ì°©ëœ ì•„ì´í…œì´ ìˆìœ¼ë©´ ì œê±°
 	if (currentEquippedItem)
 	{
 		currentEquippedItem->Destroy();
 		currentEquippedItem = nullptr;
 	}
 
-	// »õ ¾ÆÀÌÅÛ ½ºÆù
+	// ìƒˆ ì•„ì´í…œ ìŠ¤í°
 	if (itemClass != nullptr)
 	{
 		currentEquippedItem = SpawnItemAtSocket(itemClass, attachSocketName);
@@ -437,35 +435,35 @@ void UPlayerEquidItem::ToggleItemEquip(int itemSlotIndex, TSubclassOf<AActor> it
 		itemSelectIndex = itemSlotIndex;
 
 		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green,
-			FString::Printf(TEXT("Equipped item with index: %d"), itemSlotIndex));
+			FString::Printf(TEXT("ì¥ì°©ëœ ì•„ì´í…œ : %s"), *currentEquippedItem->GetName()));
 	}
 }
 
-// ÇöÀç ÀåÂøµÈ ¾ÆÀÌÅÛ Á¦°Å ÇÔ¼ö
+// í˜„ì¬ ì¥ì°©ëœ ì•„ì´í…œ ì œê±° í•¨ìˆ˜
 void UPlayerEquidItem::DropCurrentItem()
 {
 	if (!currentEquippedItem)
 	{
-		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, TEXT("No item equipped to remove!"));
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, TEXT("ì•„ì´í…œì´ ì¥ì°©ë˜ì–´ ìˆì§€ ì•ŠìŒ"));
 		return;
 	}
 
-	// ¾ÆÀÌÅÛ Å¬·¡½º È®ÀÎ
+	// ì•„ì´í…œ í´ë˜ìŠ¤ í™•ì¸
 	AItem* item = Cast<AItem>(currentEquippedItem);
 
 	if (!item)
 	{
-		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Failed to cast equipped item!"));
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("ì¥ì°©ëœ ì•„ì´í…œì´ AItemì´ ì•„ë‹˜"));
 		return;
 	}
 
-	// ÇöÀç ÀåÂøµÈ ¾ÆÀÌÅÛ ÆÄ±«
+	// í˜„ì¬ ì¥ì°©ëœ ì•„ì´í…œ íŒŒê´´
 	currentEquippedItem->Destroy();
 	currentEquippedItem = nullptr;
 
-	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, TEXT("Item removed from inventory"));
+	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, TEXT("ì•„ì´í…œì´ íŒŒê´´ë¨"));
 
-	// ¾ÆÀÌÅÛ ÀÎµ¦½º ÃÊ±âÈ­
+	// ì•„ì´í…œ ì¸ë±ìŠ¤ ì´ˆê¸°í™”
 	itemSelectIndex = 0;
 }
 

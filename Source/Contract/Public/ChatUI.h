@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 
 #include "CoreMinimal.h"
 
@@ -8,7 +8,7 @@
 #include "Components/Border.h"
 #include "ChatUI.generated.h"
 
-// ´ëÈ­ Á¤º¸¸¦ ÀúÀåÇÏ´Â ±¸Á¶Ã¼
+// ëŒ€í™” ì •ë³´ë¥¼ ì €ì¥í•˜ëŠ” êµ¬ì¡°ì²´
 USTRUCT(BlueprintType)
 struct FChatMessage
 {
@@ -35,49 +35,49 @@ class CONTRACT_API UChatUI : public UUserWidget
     GENERATED_BODY()
 
 public:
-    // À§Á¬ ÃÊ±âÈ­
+    // ìœ„ì ¯ ì´ˆê¸°í™”
     virtual bool Initialize() override;
 
-    // Tick ÇÔ¼ö ÀçÁ¤ÀÇ
+    // Tick í•¨ìˆ˜ ì¬ì •ì˜
     virtual void NativeTick(const FGeometry& MyGeometry, float InDeltaTime) override;
 
-    // ´ëÈ­ ½ÃÀÛ ¸Ş¼Òµå
+    // ëŒ€í™” ì‹œì‘ ë©”ì†Œë“œ
     UFUNCTION(BlueprintCallable, Category = "Chat")
     void StartDialogue();
 
-    // ´ÙÀ½ ´ëÈ­ ³»¿ëÀ¸·Î ÀüÈ¯ÇÏ´Â ¸Ş¼Òµå
+    // ë‹¤ìŒ ëŒ€í™” ë‚´ìš©ìœ¼ë¡œ ì „í™˜í•˜ëŠ” ë©”ì†Œë“œ
     UFUNCTION(BlueprintCallable, Category = "Chat")
     void NextMessage();
 
-    // ´ëÈ­ Á¾·á ¸Ş¼Òµå
+    // ëŒ€í™” ì¢…ë£Œ ë©”ì†Œë“œ
     UFUNCTION(BlueprintCallable, Category = "Chat")
     void EndDialogue();
 
-    // ÇöÀç ´ëÈ­ ÁßÀÎÁö È®ÀÎ
+    // í˜„ì¬ ëŒ€í™” ì¤‘ì¸ì§€ í™•ì¸
     UFUNCTION(BlueprintPure, Category = "Chat")
     bool GetDialogueActive() const { return isDialogueActive; }
 
-    // ´ëÈ­ ¸Ş½ÃÁö Ç¥½Ã ¾÷µ¥ÀÌÆ®
+    // ëŒ€í™” ë©”ì‹œì§€ í‘œì‹œ ì—…ë°ì´íŠ¸
     void UpdateDialogueDisplay();
 
-    // ÇöÀç ´ëÈ­ ¸Ş½ÃÁö ¹è¿­
+    // í˜„ì¬ ëŒ€í™” ë©”ì‹œì§€ ë°°ì—´
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Chat")
     TArray<FChatMessage> dialogueMessages;
 
 protected:
-    // ½ºÆäÀÌ½º Å° ÀÔ·Â Ã³¸®
+    // ìŠ¤í˜ì´ìŠ¤ í‚¤ ì…ë ¥ ì²˜ë¦¬
     void HandleSpaceKeyPress();
 
-    // ÇöÀç ¸Ş½ÃÁö ÀÎµ¦½º
+    // í˜„ì¬ ë©”ì‹œì§€ ì¸ë±ìŠ¤
     UPROPERTY(BlueprintReadOnly, Category = "Chat")
     int32 currentMessageIndex = -1;
 
-    // ´ëÈ­ ÁßÀÎÁö ¿©ºÎ¸¦ ³ªÅ¸³»´Â ÇÃ·¡±×
+    // ëŒ€í™” ì¤‘ì¸ì§€ ì—¬ë¶€ë¥¼ ë‚˜íƒ€ë‚´ëŠ” í”Œë˜ê·¸
     UPROPERTY(BlueprintReadOnly, Category = "Chat")
     bool isDialogueActive = false;
 
     // ===================================
-    // UI ¿ä¼Òµé
+    // UI ìš”ì†Œë“¤
     // ===================================
 
     UPROPERTY(meta = (BindWidget), BlueprintReadWrite, Category = "UI")
@@ -92,19 +92,19 @@ protected:
     UPROPERTY(meta = (BindWidget), BlueprintReadWrite, Category = "UI")
     class UTextBlock* messageText;
 
-    // ¹è°æ ÀÌ¹ÌÁö ¼³Á¤
+    // ë°°ê²½ ì´ë¯¸ì§€ ì„¤ì •
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Chat|UI")
     UTexture2D* defaultBackgroundTexture;
 
-    // ´ëÈ­Ã¢ »ö»ó ¼³Á¤
+    // ëŒ€í™”ì°½ ìƒ‰ìƒ ì„¤ì •
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Chat|UI")
     FLinearColor dialogueBorderColor = FLinearColor(0.05f, 0.05f, 0.05f, 0.8f);
 
-    // Ç¥½Ã Æ®·£Áö¼Ç È¿°ú È°¼ºÈ­
+    // í‘œì‹œ íŠ¸ëœì§€ì…˜ íš¨ê³¼ í™œì„±í™”
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Chat|UI")
     bool bEnableTextTransition = true;
 
-    // °è¼ÓÇÏ·Á¸é ½ºÆäÀÌ½º ÅØ½ºÆ® Ç¥½Ã
+    // ê³„ì†í•˜ë ¤ë©´ ìŠ¤í˜ì´ìŠ¤ í…ìŠ¤íŠ¸ í‘œì‹œ
     UPROPERTY(meta = (BindWidget), BlueprintReadWrite, Category = "UI")
     class UTextBlock* pressSpaceText;
 

@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+ï»¿// Fill out your copyright notice in the Description page of Project Settings.
 
 
 #include "Bullet.h"
@@ -9,10 +9,8 @@
 #include "GameFramework/ProjectileMovementComponent.h"
 #include <Kismet\KismetMathLibrary.h>
 
-// Sets default values
 ABullet::ABullet()
 {
- 	// Set this pawn to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 
 	bulletMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("BulletMesh"));
@@ -29,14 +27,13 @@ ABullet::ABullet()
 
 	capsuleComponent->OnComponentBeginOverlap.AddDynamic(this, &ABullet::OnOtherHit);
 
-	// Ãæµ¹ ¼Ó¼º ¼³Á¤
+	// ì¶©ëŒ ì†ì„± ì„¤ì •
 	capsuleComponent->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
 	capsuleComponent->SetCollisionObjectType(ECollisionChannel::ECC_WorldDynamic);
 	capsuleComponent->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Overlap);
 	capsuleComponent->SetGenerateOverlapEvents(true);
 }
 
-// Called when the game starts or when spawned
 void ABullet::BeginPlay()
 {
 	Super::BeginPlay();
@@ -52,7 +49,7 @@ void ABullet::OnOtherHit(UPrimitiveComponent* HitComp, AActor* otherActor, UPrim
 
 	//GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, FString::Printf(TEXT("Bullet Hit : %s"), *actorName));
 
-	// Eneny Å¸ÀÔÀÎÁö È®ÀÎ
+	// Eneny íƒ€ìž…ì¸ì§€ í™•ì¸
 	if (otherActor->IsA(AEneny::StaticClass()))
 	{
 		AEneny* eneny = Cast<AEneny>(otherActor);

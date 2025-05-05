@@ -1,5 +1,4 @@
-// QuestManager.h ¼öÁ¤
-#pragma once
+ï»¿#pragma once
 
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
@@ -19,36 +18,36 @@ protected:
 public:
     virtual void Tick(float DeltaTime) override;
 
-    // ÇÃ·¹ÀÌ¾î¿ÍÀÇ »óÈ£ÀÛ¿ë Ã³¸® ÇÔ¼ö
+    // í”Œë ˆì´ì–´ì™€ì˜ ìƒí˜¸ì‘ìš© ì²˜ë¦¬ í•¨ìˆ˜
     UFUNCTION(BlueprintCallable, Category = "Interaction")
     void InteractWithPlayer();
 
-    // ÇÃ·¹ÀÌ¾î°¡ °¡±îÀÌ ÀÖ´ÂÁö È®ÀÎÇÏ´Â ÇÔ¼ö
+    // í”Œë ˆì´ì–´ê°€ ê°€ê¹Œì´ ìˆëŠ”ì§€ í™•ì¸í•˜ëŠ” í•¨ìˆ˜
     UFUNCTION(BlueprintPure, Category = "Interaction")
     bool IsPlayerClose() const;
 
-    // ´ëÈ­ UI Ç¥½Ã
+    // ëŒ€í™” UI í‘œì‹œ
     UFUNCTION(BlueprintCallable, Category = "UI")
     void ShowChatUI();
 
-    // ´ëÈ­ UI ¼û±â±â
+    // ëŒ€í™” UI ìˆ¨ê¸°ê¸°
     UFUNCTION(BlueprintCallable, Category = "UI")
     void HideChatUI();
 
-    // ´ëÈ­ UI°¡ Ç¥½ÃµÇ¾î ÀÖ´ÂÁö È®ÀÎ
+    // ëŒ€í™” UIê°€ í‘œì‹œë˜ì–´ ìˆëŠ”ì§€ í™•ì¸
     UFUNCTION(BlueprintPure, Category = "UI")
     bool GetChatUIVisible() const { return isChatUIVisible; }
 
 protected:
-    // »óÈ£ÀÛ¿ë °Å¸®
+    // ìƒí˜¸ì‘ìš© ê±°ë¦¬
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Interaction")
     float interactionDistance = 200.0f;
 
-    // ´ëÈ­ UI Å¬·¡½º ·¹ÆÛ·±½º
+    // ëŒ€í™” UI í´ë˜ìŠ¤ ë ˆí¼ëŸ°ìŠ¤
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
     TSubclassOf<class UChatUI> chatUIClass;
 
-    // ´ëÈ­ UI ÀÎ½ºÅÏ½º
+    // ëŒ€í™” UI ì¸ìŠ¤í„´ìŠ¤
     UPROPERTY(BlueprintReadOnly, Category = "UI")
     class UChatUI* chatUIInstance;
 
@@ -56,7 +55,7 @@ protected:
     class APlayerController* playerController;
     class UInputComponent* playerInputComponent;
 
-    // ´ëÈ­ UI°¡ Ç¥½ÃµÇ¾î ÀÖ´ÂÁö ¿©ºÎ
+    // ëŒ€í™” UIê°€ í‘œì‹œë˜ì–´ ìˆëŠ”ì§€ ì—¬ë¶€
     UPROPERTY(BlueprintReadOnly, Category = "UI")
     bool isChatUIVisible = false;
 };
