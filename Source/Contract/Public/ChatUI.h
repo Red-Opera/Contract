@@ -39,7 +39,7 @@ public:
     virtual bool Initialize() override;
 
     // Tick 함수 재정의
-    virtual void NativeTick(const FGeometry& MyGeometry, float InDeltaTime) override;
+    virtual void NativeTick(const FGeometry& myGeometry, float deltaTime) override;
 
     // 대화 시작 메소드
     UFUNCTION(BlueprintCallable, Category = "Chat")
@@ -100,13 +100,25 @@ protected:
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Chat|UI")
     FLinearColor dialogueBorderColor = FLinearColor(0.05f, 0.05f, 0.05f, 0.8f);
 
-    // 표시 트랜지션 효과 활성화
-    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Chat|UI")
-    bool bEnableTextTransition = true;
-
     // 계속하려면 스페이스 텍스트 표시
     UPROPERTY(meta = (BindWidget), BlueprintReadWrite, Category = "UI")
     class UTextBlock* pressSpaceText;
 
-	class APlayerController* playerController;
+    UPROPERTY(BlueprintReadOnly, Category = "Chat|Typing")
+    FString currentDisplayedText;                           // 현재 표시된 텍스트
+
+    UPROPERTY(BlueprintReadOnly, Category = "Chat|Typing")
+    FString fullTextToDisplay;                              // 표시해야 할 전체 텍스트
+
+    UPROPERTY(BlueprintReadOnly, Category = "Chat|Typing")
+    bool isTypingEffect = false;                            // 타이핑 효과 진행 중인지 여부
+
+    UPROPERTY(BlueprintReadOnly, Category = "Chat|Typing")
+    float typingTimer = 0.0f;                               // 타이핑 
+
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Chat|Typing")
+    float typingSpeed = 0.03f;                              // 글자가 나타나는 간격(초)
+
+	class APlayerController* playerController;                      // 플레이어 컨트롤러   
+    class UCharacterMovementComponent* playerMovementComponent;		// 플레이어 이동관련 컴포넌트
 };

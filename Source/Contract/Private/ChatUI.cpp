@@ -1,9 +1,13 @@
 ﻿#include "ChatUI.h"
+#include "Components/Border.h"
+#include "Components/InputComponent.h"
 #include "Components/Image.h"
 #include "Components/TextBlock.h"
-#include "Components/Border.h"
-#include "Kismet/GameplayStatics.h"
+#include "Engine/World.h"
+#include "GameFramework/Character.h"
+#include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/PlayerController.h"
+#include "Kismet/GameplayStatics.h"
 
 bool UChatUI::Initialize()
 {
@@ -28,27 +32,94 @@ bool UChatUI::Initialize()
 		return false;
 	}
 
+	ACharacter* player = playerController->GetCharacter();
+
+	if (player == nullptr)
+	{
+        GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("플레이어 캐릭터가 존재하지 않습니다."));
+
+        return false;
+    }
+
+	playerMovementComponent = Cast<UCharacterMovementComponent>(player->GetMovementComponent());
+
+    if (playerMovementComponent == nullptr)
+    {
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("플레이어 이동 컴포넌트가 존재하지 않습니다."));
+
+		return false;
+    }
+
     // 처음에는 대화창 숨기기
     SetVisibility(ESlateVisibility::Hidden);
 
     return true;
 }
 
-void UChatUI::NativeTick(const FGeometry& MyGeometry, float InDeltaTime)
+void UChatUI::NativeTick(const FGeometry& myGeometry, float deltaTime)
 {
-    Super::NativeTick(MyGeometry, InDeltaTime);
+    Super::NativeTick(myGeometry, deltaTime);
+
+    // 타이핑 효과 업데이트
+    if (isTypingEffect && messageText != nullptr)
+    {
+        typingTimer += deltaTime;
+
+        if (typingTimer >= typingSpeed)
+        {
+            typingTimer = 0.0f;
+
+            // 표시할 다음 글자 추가
+            if (currentDisplayedText.Len() < fullTextToDisplay.Len())
+            {
+                currentDisplayedText.AppendChar(fullTextToDisplay[currentDisplayedText.Len()]);
+                messageText->SetText(FText::FromString(currentDisplayedText));
+            }
+
+            else
+            {
+                // 타이핑 효과 완료
+                isTypingEffect = false;
+
+                // 타이핑 효과가 끝났으므로 '계속하려면 스페이스' 텍스트 표시
+                if (pressSpaceText != nullptr)
+                    pressSpaceText->SetVisibility(ESlateVisibility::Visible);
+
+            }
+        }
+    }
 
     // 대화가 활성화되어 있을 때만 입력 처리
-    if (isDialogueActive)
+    if (isDialogueActive && playerController)
     {
-        if (playerController != nullptr && playerController->WasInputKeyJustPressed(EKeys::SpaceBar))
+        if (playerController->WasInputKeyJustPressed(EKeys::SpaceBar))
             HandleSpaceKeyPress();
+
+        if (playerController->WasInputKeyJustPressed(EKeys::Escape))
+            EndDialogue();
     }
 }
 
 void UChatUI::HandleSpaceKeyPress()
 {
-    NextMessage();
+    // 타이핑 효과가 진행 중이면 즉시 모든 텍스트 표시
+    if (isTypingEffect)
+    {
+        isTypingEffect = false;
+        currentDisplayedText = fullTextToDisplay;
+
+        if (messageText != nullptr)
+            messageText->SetText(FText::FromString(currentDisplayedText));
+
+
+        // '계속하려면 스페이스' 텍스트 표시
+        if (pressSpaceText != nullptr)
+            pressSpaceText->SetVisibility(ESlateVisibility::Visible);
+    }
+
+    // 다음 메시지로 이동
+    else
+        NextMessage();
 }
 
 void UChatUI::StartDialogue()
@@ -61,6 +132,10 @@ void UChatUI::StartDialogue()
 
     // UI 표시
     SetVisibility(ESlateVisibility::Visible);
+
+	// UI 배경 및 대화창 색상 설정
+    playerMovementComponent->DisableMovement();
+    playerController->SetIgnoreLookInput(true);
 
     // 첫 메시지 표시
     NextMessage();
@@ -88,11 +163,11 @@ void UChatUI::EndDialogue()
     // 대화 종료
     isDialogueActive = false;
 
-    // UI 숨김
-    SetVisibility(ESlateVisibility::Hidden);
+	// 플레이어 이동 및 입력 복원
+    playerMovementComponent->SetMovementMode(EMovementMode::MOVE_Walking);
+    playerController->SetIgnoreLookInput(false);
 
-    // 변수 초기화
-    currentMessageIndex = -1;
+    RemoveFromViewport();
 }
 
 void UChatUI::UpdateDialogueDisplay()
@@ -108,10 +183,30 @@ void UChatUI::UpdateDialogueDisplay()
     if (speakerNameText != nullptr)
         speakerNameText->SetText(FText::FromString(currentMessage.speakerName));
 
+    // 타이핑 효과 시작
     if (messageText != nullptr)
-        messageText->SetText(FText::FromString(currentMessage.message));
+    {
+        // \\n을 \n으로 변환하여 줄바꿈 처리
+        FString formattedMessage = currentMessage.message.Replace(TEXT("\\n"), TEXT("\n"));
 
-    // '계속하려면 스페이스' 텍스트 표시
+        // 타이핑 효과 변수 초기화
+        fullTextToDisplay = formattedMessage;
+        currentDisplayedText = TEXT("");
+        isTypingEffect = true;
+        typingTimer = 0.0f;
+
+        // 텍스트 초기화
+        messageText->SetText(FText::FromString(TEXT("")));
+
+
+        // 타이핑 효과 진행 중에는 '계속하려면 스페이스' 텍스트 숨기기
+        if (pressSpaceText != nullptr)
+        {
+            pressSpaceText->SetVisibility(ESlateVisibility::Hidden);
+        }
+    }
+
+    // '계속하려면 스페이스' 텍스트 내용 설정 (타이핑 효과가 끝나면 표시됨)
     if (pressSpaceText != nullptr)
     {
         // 마지막 메시지인지 확인

@@ -95,12 +95,12 @@ void AQuestManager::ShowChatUI()
     if (isChatUIVisible)
         return;
 
-    // 대화 시작
-    chatUIInstance->StartDialogue();
-
     // UI 표시
     chatUIInstance->AddToViewport();
     isChatUIVisible = true;
+
+    // 대화 시작
+    chatUIInstance->StartDialogue();
 }
 
 void AQuestManager::HideChatUI()
@@ -108,10 +108,7 @@ void AQuestManager::HideChatUI()
     if (!isChatUIVisible)
         return;
 
-    // 대화 종료
-    chatUIInstance->StartDialogue();
-
     // UI 제거
-    chatUIInstance->RemoveFromViewport();
+    chatUIInstance->EndDialogue();
     isChatUIVisible = false;
 }
