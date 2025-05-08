@@ -1,6 +1,7 @@
-#include "Item.h"
+ï»¿#include "Item.h"
 #include "PlayerInventory.h"
 #include "PlayerEquidItem.h"
+#include "IDToItem.h"
 
 #include "GameFramework/Character.h"
 #include "GameFramework/CharacterMovementComponent.h"
@@ -15,26 +16,23 @@ AItem::AItem()
 	itemMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("ItemMesh"));
 	RootComponent = itemMesh;
 
-	// mesh Áß·Â È°¼ºÈ­
+	// mesh ì¤‘ë ¥ í™œì„±í™”
 	itemMesh->SetSimulatePhysics(true);
 	itemMesh->SetEnableGravity(true);
-
-	FString assetPath = TEXT("DataAsset'/Game/PlayerInventory/PlayerInventory.PlayerInventory'");
-	playerInventory = Cast<UPlayerInventory>(StaticLoadObject(UPlayerInventory::StaticClass(), nullptr, *assetPath));
 }
 
 void AItem::RemoveItemMesh()
 {
 	if (itemMesh == nullptr)
 	{
-		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Item mesh does not exist!"));
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Item meshê°€ ì¡´ì¬í•˜ì§€ ì•ŠìŒ"));
 		return;
 	}
 
-	// ¹°¸® ½Ã¹Ä·¹ÀÌ¼Ç ºñÈ°¼ºÈ­
+	// ë¬¼ë¦¬ ì‹œë®¬ë ˆì´ì…˜ ë¹„í™œì„±í™”
 	itemMesh->SetSimulatePhysics(false);
 
-	// ¸Ş½Ã Ç¥½Ã ºñÈ°¼ºÈ­
+	// ë©”ì‹œ í‘œì‹œ ë¹„í™œì„±í™”
 	itemMesh->SetVisibility(false);
 	itemMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 }
@@ -42,26 +40,32 @@ void AItem::RemoveItemMesh()
 void AItem::BeginPlay()
 {
 	Super::BeginPlay();
+
+	FString assetPath = TEXT("DataAsset'/Game/PlayerInventory/PlayerInventory.PlayerInventory'");
+	playerInventory = Cast<UPlayerInventory>(StaticLoadObject(UPlayerInventory::StaticClass(), nullptr, *assetPath));
+	
+	FString idToItemPath = TEXT("DataAsset'/Game/PlayerInventory/IDToDataAsset.IDToDataAsset'");
+	idToItemAsset = Cast<UIDToItem>(StaticLoadObject(UIDToItem::StaticClass(), nullptr, *idToItemPath));
 	
 	player = UGameplayStatics::GetPlayerCharacter(GetWorld(), 0);
 	playerController = GetWorld()->GetFirstPlayerController();
 
-	// playerData°¡ nullÀÎÁö È®ÀÎ
+	// playerDataê°€ nullì¸ì§€ í™•ì¸
 	if (playerInventory == nullptr)
 	{
-		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Player Inventory is null! Check asset path."));
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Player Inventoryê°€ ì¡´ì¬í•˜ì§€ ì•ŠìŒ"));
 		return;
 	}
 
 	if (player == nullptr)
 	{
-		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Player does not exist."));
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Playerê°€ ì¡´ì¬í•˜ì§€ ì•ŠìŒ"));
 		return;
 	}
 
 	if (playerController == nullptr)
 	{
-		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Player controller does not exist."));
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Player controllerê°€ ì¡´ì¬í•˜ì§€ ì•ŠìŒ"));
 		return;
 	}
 
@@ -69,7 +73,7 @@ void AItem::BeginPlay()
 
 	if (playerInputComponent == nullptr)
 	{
-		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Player Input Component does not exist."));
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Player Input Componentê°€ ì¡´ì¬í•˜ì§€ ì•ŠìŒ"));
 		return;
 	}
 
@@ -80,15 +84,15 @@ bool AItem::CheckPlayerIsClose()
 {
 	if (player == nullptr)
 	{
-		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Player does not exist."));
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Playerê°€ ì¡´ì¬í•˜ì§€ ì•ŠìŒ"));
 		return false;
 	}
 
-	// ÇÃ·¹ÀÌ¾î¿Í ÇØ´ç ¿ÀºêÁ§Æ® À§Ä¡¸¦ ±¸ÇÔ
+	// í”Œë ˆì´ì–´ì™€ í•´ë‹¹ ì˜¤ë¸Œì íŠ¸ ìœ„ì¹˜ë¥¼ êµ¬í•¨
 	FVector position = GetActorLocation();
 	FVector playerPosition = player->GetActorLocation();
 
-	// ÇÃ·¹ÀÌ¾î¿Í ÇØ´ç ¿ÀºêÁ§Æ® °Å¸®¸¦ ±¸ÇÔ
+	// í”Œë ˆì´ì–´ì™€ í•´ë‹¹ ì˜¤ë¸Œì íŠ¸ ê±°ë¦¬ë¥¼ êµ¬í•¨
 	float distance = FVector::Dist(position, playerPosition);
 
 	return distance <= interactionDistance;
@@ -114,25 +118,25 @@ AItem* AItem::GetClosestInteractableItem(ACharacter* fromCharacter)
 {
 	if (fromCharacter == nullptr)
 	{
-		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("FromCharacter is null!"));
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("FromCharacterê°€ null"));
 		return nullptr;
 	}
 
-	// ÀÌ¹Ì »óÈ£ÀÛ¿ë Ã³¸® ÁßÀÌ¸é ½Ã°£ È®ÀÎ ÈÄ Ã³¸®
+	// ì´ë¯¸ ìƒí˜¸ì‘ìš© ì²˜ë¦¬ ì¤‘ì´ë©´ ì‹œê°„ í™•ì¸ í›„ ì²˜ë¦¬
 	static float lastInteractionTime = 0.0f;
 	float currentTime = fromCharacter->GetWorld()->GetTimeSeconds();
 
 	if (isInteractionInProgress && currentTime - lastInteractionTime < 0.15f)
 		return nullptr;
 
-	// ¸ğµç Item ¾×ÅÍ Ã£±â
+	// ëª¨ë“  Item ì•¡í„° ì°¾ê¸°
 	TArray<AActor*> foundItems;
 	UGameplayStatics::GetAllActorsOfClass(fromCharacter->GetWorld(), AItem::StaticClass(), foundItems);
 
 	AItem* closestItem = nullptr;
 	float closestDistance = MAX_FLT;
 
-	// È¹µæ °¡´ÉÇÏ°í °Å¸® ³»¿¡ ÀÖ´Â °¡Àå °¡±î¿î ¾ÆÀÌÅÛ Ã£±â
+	// íšë“ ê°€ëŠ¥í•˜ê³  ê±°ë¦¬ ë‚´ì— ìˆëŠ” ê°€ì¥ ê°€ê¹Œìš´ ì•„ì´í…œ ì°¾ê¸°
 	for (AActor* actor : foundItems)
 	{
 		AItem* item = Cast<AItem>(actor);
@@ -152,17 +156,17 @@ AItem* AItem::GetClosestInteractableItem(ACharacter* fromCharacter)
 	if (closestItem == nullptr)
 		return nullptr;
 
-	// °¡Àå °¡±î¿î ¾ÆÀÌÅÛÀÌ ÀÖÀ¸¸é »óÈ£ÀÛ¿ë Ã³¸® ÁßÀ¸·Î ¼³Á¤
+	// ê°€ì¥ ê°€ê¹Œìš´ ì•„ì´í…œì´ ìˆìœ¼ë©´ ìƒí˜¸ì‘ìš© ì²˜ë¦¬ ì¤‘ìœ¼ë¡œ ì„¤ì •
 	isInteractionInProgress = true;
 	lastInteractionTime = currentTime;
 
-	// Àá½Ã ÈÄ »óÈ£ÀÛ¿ë Ã³¸® »óÅÂ ÃÊ±âÈ­
+	// ì ì‹œ í›„ ìƒí˜¸ì‘ìš© ì²˜ë¦¬ ìƒíƒœ ì´ˆê¸°í™”
 	FTimerHandle unlockTimerHandle;
 	fromCharacter->GetWorld()->GetTimerManager().SetTimer
 	(
 		unlockTimerHandle,
 		[]() { isInteractionInProgress = false; },
-		0.15f, // ÀÌÀüº¸´Ù ¾à°£ ´õ ±ä µô·¹ÀÌ·Î Á¶Á¤
+		0.15f, // ì´ì „ë³´ë‹¤ ì•½ê°„ ë” ê¸´ ë”œë ˆì´ë¡œ ì¡°ì •
 		false
 	);
 
@@ -178,19 +182,19 @@ void AItem::Tick(float DeltaTime)
 
 void AItem::UseItem()
 {
-	// ÇÃ·¹ÀÌ¾î¿¡¼­ PlayerEquidItem ÄÄÆ÷³ÍÆ® °¡Á®¿À±â
+	// í”Œë ˆì´ì–´ì—ì„œ PlayerEquidItem ì»´í¬ë„ŒíŠ¸ ê°€ì ¸ì˜¤ê¸°
 	if (player)
 	{
 		UPlayerEquidItem* playerEquidItem = player->FindComponentByClass<UPlayerEquidItem>();
 
-		// itemSelectIndex °ªÀ» 0À¸·Î ¼³Á¤
+		// itemSelectIndex ê°’ì„ 0ìœ¼ë¡œ ì„¤ì •
 		if (playerEquidItem)
 			playerEquidItem->itemSelectIndex = 0;
 
 		else
-			GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("PlayerEquidItem component not found!"));
+			GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("PlayerEquidItem componentê°€ ì¡´ì¬í•˜ì§€ ì•ŠìŒ"));
 	}
 
 	else
-		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Player is null!"));
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Playerê°€ ì¡´ì¬í•˜ì§€ ì•ŠìŒ"));
 }

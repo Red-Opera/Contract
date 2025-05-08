@@ -1,4 +1,4 @@
-#include "Gun.h"
+ï»¿#include "Gun.h"
 #include "PlayerInventory.h"
 
 #include "NiagaraFunctionLibrary.h"  
@@ -33,13 +33,13 @@ void AGun::BeginPlay()
 
     if (player == nullptr)
     {
-        GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Player does not exist."));
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Playerê°€ ì¡´ìž¬í•˜ì§€ ì•ŠìŒ."));
         return;
     }
 
     if (playerController == nullptr)
     {
-        GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("PlayerController does not exist."));
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("PlayerControllerê°€ ì¡´ìž¬í•˜ì§€ ì•ŠìŒ."));
         return;
     }
 
@@ -47,20 +47,20 @@ void AGun::BeginPlay()
 
     if (inputComponent == nullptr)
     {
-        GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("InputComponent does not exist."));
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("InputComponentê°€ ì¡´ìž¬í•˜ì§€ ì•ŠìŒ."));
         return;
     }
 
     if (bulletBlueprint == nullptr)
     {
-        GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("BulletBlueprint does not exist."));
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("BulletBlueprintê°€ ì¡´ìž¬í•˜ì§€ ì•ŠìŒ."));
         return;
     }
 
-    // Niagara ÀÌÆåÆ® Á¸Àç È®ÀÎ
+    // Niagara ì´íŽ™íŠ¸ ì¡´ìž¬ í™•ì¸
     if (gunMuzzleFireNiagara == nullptr)
     {
-        GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Gun Fire Niagara does not exist."));
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Gun Fire Niagaraê°€ ì¡´ìž¬í•˜ì§€ ì•ŠìŒ."));
         return;
     }
 
@@ -69,13 +69,13 @@ void AGun::BeginPlay()
 
 	if (playerInventory == nullptr)
 	{
-		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Player Inventory is null! Check asset path."));
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Player Inventoryê°€ ì¡´ìž¬í•˜ì§€ ì•ŠìŒ."));
 		return;
 	}
 
     EnableInput(playerController);
 
-    // ÀÔ·Â ¹ÙÀÎµù ¼³Á¤  
+    // ìž…ë ¥ ë°”ì¸ë”© ì„¤ì •  
     inputComponent->BindAction(TEXT("GunFire"), IE_Pressed, this, &AGun::StartFire);
     inputComponent->BindAction(TEXT("GunFire"), IE_Released, this, &AGun::StopFire);
 	inputComponent->BindAction(TEXT("Reload"), IE_Pressed, this, &AGun::Reload);
@@ -125,10 +125,10 @@ void AGun::StartFire()
 
     isFire = true;
 
-    // Ã³À½ ÇÑ ¹ø Áï½Ã ¹ß»ç  
+    // ì²˜ìŒ í•œ ë²ˆ ì¦‰ì‹œ ë°œì‚¬  
     Fire();
 
-    // ÀÌÈÄ FireRate °£°ÝÀ¸·Î Fire() ÇÔ¼ö¸¦ ¹Ýº¹ È£Ãâ (FireRate´Â ¹ß»ç °£°Ý)  
+    // ì´í›„ FireRate ê°„ê²©ìœ¼ë¡œ Fire() í•¨ìˆ˜ë¥¼ ë°˜ë³µ í˜¸ì¶œ (FireRateëŠ” ë°œì‚¬ ê°„ê²©)  
     GetWorld()->GetTimerManager().SetTimer(TimerHandle_AutoFire, this, &AGun::Fire, fireRate, true);
 }
 
@@ -136,7 +136,7 @@ void AGun::StopFire()
 {
     isFire = false;
 
-    // Å¸ÀÌ¸Ó ÇÚµéÀ» ÀÌ¿ëÇÏ¿© ¹Ýº¹ È£Ãâ ÁßÁö  
+    // íƒ€ì´ë¨¸ í•¸ë“¤ì„ ì´ìš©í•˜ì—¬ ë°˜ë³µ í˜¸ì¶œ ì¤‘ì§€  
     GetWorld()->GetTimerManager().ClearTimer(TimerHandle_AutoFire);
 }
 
@@ -156,7 +156,7 @@ void AGun::Reload()
         playerInventory->bulletCount = 0;
 	}
 
-	// ³²Àº ÃÑ¾Ë ¼ö Ãâ·Â
-	FString ammoCountStr = FString::Printf(TEXT("Current Ammo: %d"), playerInventory->bulletCount);
+	// ë‚¨ì€ ì´ì•Œ ìˆ˜ ì¶œë ¥
+	FString ammoCountStr = FString::Printf(TEXT("í˜„ìž¬ ìž¥ì°©ëœ ì´ì•Œ ìˆ˜: %d"), currentAmmoEquipped);
 	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, ammoCountStr);
 }

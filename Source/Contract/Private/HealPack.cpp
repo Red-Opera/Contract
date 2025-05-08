@@ -1,4 +1,4 @@
-#include "HealPack.h"
+ï»¿#include "HealPack.h"
 #include "PlayerInventory.h"
 
 #include "Components/StaticMeshComponent.h"
@@ -12,16 +12,16 @@ void AHealPack::AddHealPack()
     if (!CheckPlayerIsClose() || !isGetable)
         return;
 
-    // °¡Àå °¡±î¿î »óÈ£ÀÛ¿ë °¡´ÉÇÑ ¾ÆÀÌÅÛÀ» Ã£±â
+    // ê°€ì¥ ê°€ê¹Œìš´ ìƒí˜¸ì‘ìš© ê°€ëŠ¥í•œ ì•„ì´í…œì„ ì°¾ê¸°
     AItem* closestItem = AItem::GetClosestInteractableItem(player);
 
-    // ÀÌ ¾ÆÀÌÅÛÀÌ °¡Àå °¡±î¿î ¾ÆÀÌÅÛÀÌ ¾Æ´Ï¸é ¹«½Ã
+    // ì´ ì•„ì´í…œì´ ê°€ì¥ ê°€ê¹Œìš´ ì•„ì´í…œì´ ì•„ë‹ˆë©´ ë¬´ì‹œ
     if (closestItem != this)
         return;
 
-    // ÇÃ·¹ÀÌ¾î ÀÎº¥Åä¸®¿¡ Èú ¾ÆÀÌÅÛ Ãß°¡
-    playerInventory->items.Add(AHealPack::StaticClass());
-    GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, TEXT("Got a grenade!"));
+    // í”Œë ˆì´ì–´ ì¸ë²¤í† ë¦¬ì— í ì•„ì´í…œ ì¶”ê°€
+    playerInventory->AddItem(healItemID);
+	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, TEXT("Heal Packì´ ì¸ë²¤í† ë¦¬ì— ì¶”ê°€ë¨"));
 
     Destroy();
 }
@@ -37,14 +37,14 @@ void AHealPack::RemoveHealPack()
 {
 	if (itemMesh == nullptr)
 	{
-		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Item mesh does not exist!"));
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Item meshê°€ ì¡´ì¬í•˜ì§€ ì•ŠìŒ"));
 		return;
 	}
 
-	// ¹°¸® ½Ã¹Ä·¹ÀÌ¼Ç ºñÈ°¼ºÈ­
+	// ë¬¼ë¦¬ ì‹œë®¬ë ˆì´ì…˜ ë¹„í™œì„±í™”
 	itemMesh->SetSimulatePhysics(false);
 
-	// ¸Ş½Ã Ç¥½Ã ºñÈ°¼ºÈ­
+	// ë©”ì‹œ í‘œì‹œ ë¹„í™œì„±í™”
 	itemMesh->SetVisibility(false);
 	itemMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 
@@ -55,7 +55,7 @@ void AHealPack::UseItem()
 {
     if (!player)
     {
-        UE_LOG(LogTemp, Warning, TEXT("Player character not found!"));
+		UE_LOG(LogTemp, Warning, TEXT("Player characterê°€ ì¡´ì¬í•˜ì§€ ì•ŠìŒ"));
         return;
     }
 
@@ -63,7 +63,7 @@ void AHealPack::UseItem()
 
     int healAmount = 0;
 
-    // È¸º¹ Å¸ÀÔ¿¡ µû¶ó È¸º¹·® °è»ê
+    // íšŒë³µ íƒ€ì…ì— ë”°ë¼ íšŒë³µëŸ‰ ê³„ì‚°
     if (HealType == HealingType::Fixed)
         healAmount = fixedHealAmount;
 
@@ -71,28 +71,28 @@ void AHealPack::UseItem()
     else
         healAmount = maxHealth * healPercentage;
 
-    // ½ÇÁ¦ È¸º¹ Àû¿ë (ÃÖ´ë Ã¼·ÂÀ» ³ÑÁö ¾Êµµ·Ï)
+    // ì‹¤ì œ íšŒë³µ ì ìš© (ìµœëŒ€ ì²´ë ¥ì„ ë„˜ì§€ ì•Šë„ë¡)
     int newHealth = FMath::Min(currentHealth + healAmount, maxHealth);
 
-    // µğ¹ö±× ¸Ş½ÃÁö·Î È¸º¹ Á¤º¸ Ãâ·Â
+    // ë””ë²„ê·¸ ë©”ì‹œì§€ë¡œ íšŒë³µ ì •ë³´ ì¶œë ¥
 	GEngine->AddOnScreenDebugMessage
     (
         -1, 5.f, FColor::Green,
-		FString::Printf(TEXT("Healing applied: %d. Health: %d -> %d (Max: %d)"), healAmount, currentHealth, newHealth, maxHealth)
+		FString::Printf(TEXT("ì²´ë ¥ íšŒë³µ: %d -> %d. ìµœëŒ€ ì²´ë ¥ : %d"), currentHealth, newHealth, maxHealth)
     );
 
-    // ÀÌÆåÆ® ¹× »ç¿îµå Àç»ı
+    // ì´í™íŠ¸ ë° ì‚¬ìš´ë“œ ì¬ìƒ
     if (healEffect)
         UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), healEffect, player->GetActorLocation(), FRotator::ZeroRotator, true);
 
     if (healSound)
         UGameplayStatics::PlaySoundAtLocation(this, healSound, player->GetActorLocation());
 
-    // ¿©±â¼­ ½ÇÁ¦·Î Ä³¸¯ÅÍÀÇ Ã¼·ÂÀ» ¾÷µ¥ÀÌÆ®ÇØ¾ß ÇÕ´Ï´Ù
-    // player->UpdateHealth(newHealth); // ¿¹½Ã ÄÚµå, ½ÇÁ¦ ±¸Çö ÇÊ¿ä
+    // ì—¬ê¸°ì„œ ì‹¤ì œë¡œ ìºë¦­í„°ì˜ ì²´ë ¥ì„ ì—…ë°ì´íŠ¸í•´ì•¼ í•©ë‹ˆë‹¤
+    // player->UpdateHealth(newHealth); // ì˜ˆì‹œ ì½”ë“œ, ì‹¤ì œ êµ¬í˜„ í•„ìš”
 
     currentHealth = newHealth;
 
-    // ¾ÆÀÌÅÛ »ç¿ë ÈÄ Á¦°Å
+    // ì•„ì´í…œ ì‚¬ìš© í›„ ì œê±°
     Destroy();
 }

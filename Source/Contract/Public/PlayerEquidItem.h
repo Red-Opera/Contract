@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
@@ -15,71 +15,98 @@ public:
 
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
-	// ÇÃ·¹ÀÌ¾î ÀÔ·ÂÀ» Ã³¸®ÇÏ´Â ÇÔ¼ö
+	// í”Œë ˆì´ì–´ ì…ë ¥ì„ ì²˜ë¦¬í•˜ëŠ” ë©”ì†Œë“œ
 	UFUNCTION(BlueprintCallable, Category = "Player Equipment")
 	bool PlayerInventoryDataLoad();
 
-	// ¾ÆÀÌÅÛ ½ºÆù ÇÔ¼ö
+	// ì•„ì´í…œ ìŠ¤í° ë©”ì†Œë“œ
 	UFUNCTION(BlueprintCallable, Category = "Player Equipment")
 	AActor* SpawnItemAtSocket(TSubclassOf<AActor> itemClass, FName socketName);
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player Equipment")
 	int itemSelectIndex = 0;
 
+	// ì•„ì´í…œ ì„ íƒ ë° í† ê¸€ ì²˜ë¦¬ ë©”ì†Œë“œ
+	UFUNCTION(BlueprintCallable, Category = "Player Equipment")
+	void ToggleItemEquip(int itemSlotIndex, TSubclassOf<AActor> itemClass);
+
+	// í˜„ì¬ ì¥ì°©ëœ ì•„ì´í…œ ë“œë¡­ ë©”ì†Œë“œ 
+	UFUNCTION(BlueprintCallable, Category = "Player Equipment")
+	void DropCurrentItem();
+
+	// í˜„ì¬ ì•„ì´í…œì´ ì¥ì°©ë˜ì–´ ìˆëŠ”ì§€ í™•ì¸í•˜ëŠ” ë©”ì†Œë“œ
+	UFUNCTION(BlueprintCallable, Category = "Player Equipment")
+	bool IsItemEquipped() const;
+
+	// í˜„ì¬ ì„ íƒëœ ì•„ì´í…œ ì¸ë±ìŠ¤ í™•ì¸ ë©”ì†Œë“œ
+	UFUNCTION(BlueprintCallable, Category = "Player Equipment")
+	int GetSelectedItemIndex() const;
+
+	// ê°–ê³  ìˆëŠ” ì•„ì´í…œ
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Items")
+	TArray<int> itemCount;
+
 protected:
 	virtual void BeginPlay() override;
 
-	// ÀÎº¥Åä¸® µ¥ÀÌÅÍ ¾Ö¼Â °æ·Î
+	// ì¸ë²¤í† ë¦¬ ë°ì´í„° ì• ì…‹ ê²½ë¡œ
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Player Equipment")
 	TSoftObjectPtr<UPlayerInventory> InventoryDataAsset = TSoftObjectPtr<UPlayerInventory>(FSoftObjectPath(TEXT("/Game/PlayerInventory/PlayerInventory.PlayerInventory")));
 
-	// ¼ö·ùÅº Å¬·¡½º
+	// ìˆ˜ë¥˜íƒ„ í´ë˜ìŠ¤
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Player Equipment")
-	TSubclassOf<AActor> GrenadeClass;
+	TSubclassOf<AActor> grenadeClass;
 
-	// È­¿°º´ Å¬·¡½º
+	// í™”ì—¼ë³‘ í´ë˜ìŠ¤
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Player Equipment")
 	TSubclassOf<AActor> molotovClass;
 
-	// ¼ÒÇü Èú ÆÑ Å¬·¡½º
+	// ì†Œí˜• í íŒ© í´ë˜ìŠ¤
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Player Equipment")
 	TSubclassOf<AActor> smallHealPackClass;
-	
-	// ´ëÇü Èú ÆÑ Å¬·¡½º
+
+	// ëŒ€í˜• í íŒ© í´ë˜ìŠ¤
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Player Equipment")
 	TSubclassOf<AActor> largeHealPackClass;
 
-	// ¾ÆÀÌÅÛÀ» ºÎÂøÇÒ ¼ÒÄÏ ÀÌ¸§
+	// ì•„ì´í…œì„ ë¶€ì°©í•  ì†Œì¼“ ì´ë¦„
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player Equipment")
 	FName attachSocketName = FName("index_01_r");
 
 private:
-	// ÀÎº¥Åä¸® µ¥ÀÌÅÍ ·Îµå
+	void Press1Key();			// 1ë²ˆ í‚¤ ì…ë ¥ ì²˜ë¦¬
+	void Press2Key();			// 2ë²ˆ í‚¤ ì…ë ¥ ì²˜ë¦¬
+	void Press3Key();			// 3ë²ˆ í‚¤ ì…ë ¥ ì²˜ë¦¬
+	void Press4Key();			// 4ë²ˆ í‚¤ ì…ë ¥ ì²˜ë¦¬
+	void Press5Key();			// 5ë²ˆ í‚¤ ì…ë ¥ ì²˜ë¦¬
+
+	// ì¸ë²¤í† ë¦¬ ë°ì´í„° ë¡œë“œ
 	void LoadInventoryData();
 
-	// ¾ÆÀÌÅÛ ÅõÃ´
+	// ì•„ì´í…œ íˆ¬ì²™
 	void ThrowItemTrigger();
 	void ThrowItem();
 
-	
-	void SpawnGrenade();		// ¼ö·ùÅº ½ºÆù
-	void SpawnMolotov();		// È­¿°º´ ½ºÆù
-	void SpawnSmallHealPack();	// ¼ÒÇü Èú ÆÑ ½ºÆù
-	void SpawnLargeHealPack();	// ´ëÇü Èú ÆÑ ½ºÆù
+	void SpawnGrenade();		// ìˆ˜ë¥˜íƒ„ ìŠ¤í°
+	void SpawnMolotov();		// í™”ì—¼ë³‘ ìŠ¤í°
+	void SpawnSmallHealPack();	// ì†Œí˜• í íŒ© ìŠ¤í°
+	void SpawnLargeHealPack();	// ëŒ€í˜• í íŒ© ìŠ¤í°
 
 	class ACharacter* player;
 	class APlayerController* playerController;
 	class UInputComponent* playerInputComponent;
-	class USkeletalMeshComponent* targetSkeletalMesh;	// ¾ÆÀÌÅÛÀ» ºÎÂøÇÒ ½ºÄÌ·¹Å» ¸Ş½Ã ÄÄÆ÷³ÍÆ®
-	class UAnimInstance* playerAnimInstance;			// ÇÃ·¹ÀÌ¾î ¾Ö´Ï¸ŞÀÌ¼Ç ºí·çÇÁ¸°Æ®
+	class USkeletalMeshComponent* targetSkeletalMesh;	// ì•„ì´í…œì„ ë¶€ì°©í•  ìŠ¤ì¼ˆë ˆíƒˆ ë©”ì‹œ ì»´í¬ë„ŒíŠ¸
+	class UAnimInstance* playerAnimInstance;			// í”Œë ˆì´ì–´ ì• ë‹ˆë©”ì´ì…˜ ë¸”ë£¨í”„ë¦°íŠ¸
 
-	// ·ÎµåµÈ ÀÎº¥Åä¸® µ¥ÀÌÅÍ ¾Ö¼Â ÂüÁ¶
+	// ë¡œë“œëœ ì¸ë²¤í† ë¦¬ ë°ì´í„° ì• ì…‹ ì°¸ì¡°
 	UPlayerInventory* playerInventoryData;
 
-	// ÇöÀç ÀåÂøµÈ ¾ÆÀÌÅÛ
+	// í˜„ì¬ ì¥ì°©ëœ ì•„ì´í…œ
 	UPROPERTY()
 	AActor* currentEquippedItem;
 
-	// Çì´õ ÆÄÀÏ¿¡ Å¸ÀÌ¸Ó ÇÚµé ¼±¾ğ
+	// í—¤ë” íŒŒì¼ì— íƒ€ì´ë¨¸ í•¸ë“¤ ì„ ì–¸
 	FTimerHandle timerHandle_AutoThrow;
+
+	int pressedKey = 0;	// í‚¤ ì…ë ¥ ì²˜ë¦¬
 };

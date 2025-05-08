@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.  
+ï»¿// Fill out your copyright notice in the Description page of Project Settings.  
 
 #include "Gun_AK47.h"  
 #include "PlayerInventory.h"
@@ -34,13 +34,13 @@ void AGun_AK47::BeginPlay()
 
    if (player == nullptr)  
    {  
-       GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Player does not exist."));  
+	   GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Playerê°€ ì¡´ìž¬í•˜ì§€ ì•ŠìŒ."));
        return;  
    }  
 
    if (playerController == nullptr)  
    {  
-       GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("PlayerController does not exist."));  
+	   GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("PlayerControllerê°€ ì¡´ìž¬í•˜ì§€ ì•ŠìŒ."));
        return;  
    }  
 
@@ -48,26 +48,26 @@ void AGun_AK47::BeginPlay()
 
    if (inputComponent == nullptr)  
    {  
-       GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("InputComponent does not exist."));  
+	   GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("InputComponentê°€ ì¡´ìž¬í•˜ì§€ ì•ŠìŒ."));
        return;  
    }  
 
    if (bulletBlueprint == nullptr)  
    {  
-       GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("BulletBlueprint does not exist."));  
+	   GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("BulletBlueprintê°€ ì¡´ìž¬í•˜ì§€ ì•ŠìŒ."));
        return;  
    } 
-   // Niagara ÀÌÆåÆ® Á¸Àç È®ÀÎ
+   // Niagara ì´íŽ™íŠ¸ ì¡´ìž¬ í™•ì¸
    if (gunMuzzleFireNiagara == nullptr)
    {
-       GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Gun Fire Niagara does not exist."));
+	   GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Gun Fire Niagaraê°€ ì¡´ìž¬í•˜ì§€ ì•ŠìŒ."));
        return;
    }
 
-   // ¼ÒÄÏ Á¸Àç È®ÀÎ
+   // ì†Œì¼“ ì¡´ìž¬ í™•ì¸
    if (GetMesh() == nullptr || !GetMesh()->DoesSocketExist(FName(TEXT("GunFire"))))
    {
-       GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("GunFire socket is not exist!!"));
+	   GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("GunFire socketì´ ì¡´ìž¬í•˜ì§€ ì•ŠìŒ."));
        return;
    }
 
@@ -80,13 +80,13 @@ void AGun_AK47::BeginPlay()
 
    if (playerInventory == nullptr)
    {
-       GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Player Inventory is null! Check asset path."));
+	   GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Player Inventoryê°€ ì¡´ìž¬í•˜ì§€ ì•ŠìŒ."));
        return;
    }
 
    EnableInput(playerController);  
 
-   // ÀÔ·Â ¹ÙÀÎµù ¼³Á¤  
+   // ìž…ë ¥ ë°”ì¸ë”© ì„¤ì •  
    inputComponent->BindAction(TEXT("GunFire"), IE_Pressed, this, &AGun_AK47::StartFire);  
    inputComponent->BindAction(TEXT("GunFire"), IE_Released, this, &AGun_AK47::StopFire);  
    inputComponent->BindAction(TEXT("Reload"), IE_Pressed, this, &AGun_AK47::Reload);
@@ -102,8 +102,8 @@ void AGun_AK47::Fire()
 
     ammoCount--;
 
-    // ³²Àº ÃÑ¾Ë ¼ö Ãâ·Â
-    GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, FString::Printf(TEXT("Max Bullets : %d"), ammoCount));
+    // ë‚¨ì€ ì´ì•Œ ìˆ˜ ì¶œë ¥
+	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, FString::Printf(TEXT("ìµœëŒ€ ì´ì•Œ ìˆ˜: %d"), ammoCount));
 
     FVector muzzleLocation = muzzle->GetComponentLocation();
     FRotator muzzleRotation = muzzle->GetComponentRotation();
@@ -132,10 +132,10 @@ void AGun_AK47::StartFire()
 
    isFire = true;  
 
-   // Ã³À½ ÇÑ ¹ø Áï½Ã ¹ß»ç  
+   // ì²˜ìŒ í•œ ë²ˆ ì¦‰ì‹œ ë°œì‚¬  
    Fire();  
 
-   // ÀÌÈÄ FireRate °£°ÝÀ¸·Î Fire() ÇÔ¼ö¸¦ ¹Ýº¹ È£Ãâ (FireRate´Â ¹ß»ç °£°Ý)  
+   // ì´í›„ FireRate ê°„ê²©ìœ¼ë¡œ Fire() í•¨ìˆ˜ë¥¼ ë°˜ë³µ í˜¸ì¶œ (FireRateëŠ” ë°œì‚¬ ê°„ê²©)  
    GetWorld()->GetTimerManager().SetTimer(TimerHandle_AutoFire, this, &AGun_AK47::Fire, fireRate, true);  
 }  
 
@@ -143,7 +143,7 @@ void AGun_AK47::StopFire()
 {  
    isFire = false;  
 
-   // Å¸ÀÌ¸Ó ÇÚµéÀ» ÀÌ¿ëÇÏ¿© ¹Ýº¹ È£Ãâ ÁßÁö  
+   // íƒ€ì´ë¨¸ í•¸ë“¤ì„ ì´ìš©í•˜ì—¬ ë°˜ë³µ í˜¸ì¶œ ì¤‘ì§€  
    GetWorld()->GetTimerManager().ClearTimer(TimerHandle_AutoFire);  
 }
 

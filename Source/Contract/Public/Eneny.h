@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+ï»¿// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
@@ -23,7 +23,7 @@ public:
 
 	void SetDamage(FVector hitLocation, int damage);
 
-	// µ¥¹ÌÁö Ç¥±â ³ªÀÌ¾Æ°¡¶ó
+	// ë°ë¯¸ì§€ í‘œê¸° ë‚˜ì´ì•„ê°€ë¼
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
 	TSubclassOf<class AFloatingDamage> damageParticle;
 
@@ -36,15 +36,15 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
 	bool isDead = false;
 
-	// ¹ß»ç ¿©ºÎ
+	// ë°œì‚¬ ì—¬ë¶€
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bullet")
 	bool isFire;
 
-	// ¹ß»ç µô·¹ÀÌ
+	// ë°œì‚¬ ë”œë ˆì´
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bullet")
 	float fireRate = 0.1f;
 
-	// ÀûÀÌ °®°í ÀÖ´Â ¾ÆÀÌÅÛ
+	// ì ì´ ê°–ê³  ìˆëŠ” ì•„ì´í…œ
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Items")
 	TArray<int> itemCount;
 
@@ -56,7 +56,7 @@ protected:
 	virtual void BeginPlay() override;
 
 private:
-	// ¹ß»ç ÇÔ¼ö
+	// ë°œì‚¬ í•¨ìˆ˜
 	void Fire();
 	void StartFire();
 	void StopFire();

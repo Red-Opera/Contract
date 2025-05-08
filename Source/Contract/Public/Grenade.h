@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 
 #include "CoreMinimal.h"
 #include "Item.h"
@@ -12,20 +12,20 @@ class CONTRACT_API AGrenade : public AItem
 public:
 	AGrenade() = default;
 
-	void AddGrenade();		// ¼ö·ùÅºÀ» Ãß°¡ÇÏ´Â ¸Ş¼Òµå
+	void AddGrenade();		// ìˆ˜ë¥˜íƒ„ì„ ì¶”ê°€í•˜ëŠ” ë©”ì†Œë“œ
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Player Equipment")
-	TSubclassOf<AActor> explosionMesh;				// ÆøÆÄ ¸Ş½¬
+	TSubclassOf<AActor> explosionMesh;				// í­íŒŒ ë©”ì‰¬
 
 protected:
 	virtual void BeginPlay() override;
-	virtual void UseItem() override;				// ¾ÆÀÌÅÛ »ç¿ë ¸Ş¼Òµå
+	virtual void UseItem() override;				// ì•„ì´í…œ ì‚¬ìš© ë©”ì†Œë“œ
 
 private:
-	void Explosion();								// ÆøÆÄ ¸Ş¼Òµå
-	void RemoveGrenade();							// ¼ö·ùÅº Á¦°Å ¸Ş¼Òµå
+	void Explosion();								// í­íŒŒ ë©”ì†Œë“œ
+	void RemoveGrenade();							// ìˆ˜ë¥˜íƒ„ ì œê±° ë©”ì†Œë“œ
 
-	class AActor* explosionActor;					// ÆøÆÄ ¾×ÅÍ
+	class AActor* explosionActor;					// í­íŒŒ ì•¡í„°
 
-	FTimerHandle timerHandle;						// Å¸ÀÌ¸Ó ÇÚµé
+	FTimerHandle timerHandle;						// íƒ€ì´ë¨¸ í•¸ë“¤
 };

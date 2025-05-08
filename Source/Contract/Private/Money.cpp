@@ -1,11 +1,11 @@
-#include "Money.h"
+ï»¿#include "Money.h"
 #include "PlayerInventory.h"
 
 void AMoney::BeginPlay()
 {
 	Super::BeginPlay();
 
-	// ÇÃ·¹ÀÌ¾î¿ÍÀÇ »óÈ£ÀÛ¿ëÀ» À§ÇÑ ÀÔ·Â ¹ÙÀÎµù
+	// í”Œë ˆì´ì–´ì™€ì˜ ìƒí˜¸ì‘ìš©ì„ ìœ„í•œ ì…ë ¥ ë°”ì¸ë”©
 	playerInputComponent->BindAction(TEXT("Interaction"), IE_Pressed, this, &AMoney::AddMoney);
 }
 
@@ -14,10 +14,10 @@ void AMoney::AddMoney()
 	if (!CheckPlayerIsClose())
 		return;
 
-	// ÇÃ·¹ÀÌ¾î ÀÎº¥Åä¸®¿¡ µ· Ãß°¡
+	// í”Œë ˆì´ì–´ ì¸ë²¤í† ë¦¬ì— ëˆ ì¶”ê°€
 	playerInventory->money += addMoney;
 
-	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, FString::Printf(TEXT("Got a money! Current number of money: %d"), playerInventory->money));
+	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, FString::Printf(TEXT("ëˆì„ íšë“í–ˆìŒ : %d"), addMoney));
 
 	Destroy();
 }

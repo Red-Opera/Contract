@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
@@ -17,23 +17,23 @@ public:
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 
-	// ¸Ş½Ã ÄÄÆ÷³ÍÆ®
+	// ë©”ì‹œ ì»´í¬ë„ŒíŠ¸
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Mesh")
 	class UStaticMeshComponent* mesh;
 
-	// ÃÑ±¸ ÄÄÆ÷³ÍÆ®
+	// ì´êµ¬ ì»´í¬ë„ŒíŠ¸
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bullet")
 	class UArrowComponent* muzzle;
 
-	// ÃÑ¾Ë Blueprint
+	// ì´ì•Œ Blueprint
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bullet")
 	TSubclassOf<class ABullet> bulletBlueprint;
 
-	// ¹ß»ç ¿©ºÎ
+	// ë°œì‚¬ ì—¬ë¶€
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bullet")
 	bool isFire;
 
-	// ¹ß»ç µô·¹ÀÌ
+	// ë°œì‚¬ ë”œë ˆì´
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bullet")
 	float fireRate = 0.1f;
 
@@ -51,7 +51,7 @@ protected:
 	virtual void BeginPlay() override;
 
 private:
-	// ¹ß»ç ÇÔ¼ö
+	// ë°œì‚¬ í•¨ìˆ˜
 	void Fire();
 	void StartFire();
 	void StopFire();
@@ -62,7 +62,7 @@ private:
 	class APlayerController* playerController;
 	class UPlayerInventory* playerInventory;
 
-	// Çì´õ ÆÄÀÏ¿¡ Å¸ÀÌ¸Ó ÇÚµé ¼±¾ğ
+	// í—¤ë” íŒŒì¼ì— íƒ€ì´ë¨¸ í•¸ë“¤ ì„ ì–¸
 	FTimerHandle TimerHandle_AutoFire;
 
 };
