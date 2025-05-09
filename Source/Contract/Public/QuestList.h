@@ -37,7 +37,6 @@ class CONTRACT_API UQuestList : public UDataAsset
 	GENERATED_BODY()
 
 public:
-	// List of quests
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Quest")
-	TArray<FQuestInfo> Quests;
+	TArray<FQuestInfo> quests;
 };
