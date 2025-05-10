@@ -191,66 +191,74 @@ void UQuestUI::RefreshQuestList()
     // 리스트 초기화
     questListView->ClearListItems();
 
-    // 모든 퀘스트 항목 추가
+    // 모든 퀘스트 항목들을 생성하고 바로 ListView에 추가
     for (const FQuestInfo& questInfo : questListData->quests)
     {
         UQuestItemUI* questItemWidget = CreateWidget<UQuestItemUI>(this, questItemWidgetClass);
 
-        if (questItemWidget)
+        if (questItemWidget == nullptr)
         {
-			GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, TEXT("퀘스트 항목 위젯 생성 성공"));
+            GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("퀘스트 항목 위젯 생성 실패"));
 
-            questItemWidget->SetQuestInfo(questInfo); 
-            questListView->AddItem(questItemWidget);
-			questListView->RequestRefresh();
+            continue;
         }
+
+        
+        questItemWidget->SetQuestInfo(questInfo);   // 퀘스트 정보 설정
+        
+        questListView->AddItem(questItemWidget);    // 바로 ListView에 추가
     }
+
+    // 모든 항목 추가 후 ListView 갱신
+    questListView->RequestRefresh();
+    GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, TEXT("ListView 갱신 완료"));
 }
 
 void UQuestUI::OnQuestSelected(UObject* item)
 {
     UQuestItemUI* questItemWidget = Cast<UQuestItemUI>(item);
 
-    if (questItemWidget)
+	// 선택된 항목이 유효한지 확인
+    if (questItemWidget == nullptr)
+        return;
+
+    FString questName = questItemWidget->GetQuestInfo().questName;
+
+    // 이미 선택된 항목을 다시 클릭했는지 확인
+    if (currentSelectedQuestItem == questItemWidget)
     {
-        FString questName = questItemWidget->GetQuestInfo().questName;
+        ESlateVisibility currentVisibility = questDetailPanel->GetVisibility();
 
-        // 이미 선택된 항목을 다시 클릭했는지 확인
-        if (currentSelectedQuestItem == questItemWidget)
+        // 이미 표시 중인 경우 세부 정보 패널 숨기기
+        if (currentVisibility == ESlateVisibility::Visible)
         {
-            ESlateVisibility currentVisibility = questDetailPanel->GetVisibility();
+            questDetailPanel->SetVisibility(ESlateVisibility::Hidden);
 
-            // 이미 표시 중인 경우 세부 정보 패널 숨기기
-            if (currentVisibility == ESlateVisibility::Visible)
-            {
-                questDetailPanel->SetVisibility(ESlateVisibility::Hidden);
-
-                // 선택 해제
-                currentSelectedQuestItem = nullptr;
-            }
-
-            else
-            {
-                // 숨겨져 있는 경우 다시 표시
-                questDetailPanel->SetVisibility(ESlateVisibility::Visible);
-
-                // 선택된 퀘스트의 상세 정보 표시
-                DisplayQuestDetails(questItemWidget->GetQuestInfo());
-            }
+            // 선택 해제
+            currentSelectedQuestItem = nullptr;
         }
 
         else
         {
-            // 새로운 항목 선택
-            currentSelectedQuestItem = questItemWidget;
+            // 숨겨져 있는 경우 다시 표시
+            questDetailPanel->SetVisibility(ESlateVisibility::Visible);
 
             // 선택된 퀘스트의 상세 정보 표시
             DisplayQuestDetails(questItemWidget->GetQuestInfo());
         }
-
-        // 다음 클릭을 위해 ListView의 선택 해제
-        GetWorld()->GetTimerManager().SetTimerForNextTick([this]() { questListView->SetSelectedItem(nullptr); });
     }
+
+    else
+    {
+        // 새로운 항목 선택
+        currentSelectedQuestItem = questItemWidget;
+
+        // 선택된 퀘스트의 상세 정보 표시
+        DisplayQuestDetails(questItemWidget->GetQuestInfo());
+    }
+
+    // 다음 클릭을 위해 ListView의 선택 해제
+    GetWorld()->GetTimerManager().SetTimerForNextTick([this]() { questListView->SetSelectedItem(nullptr); });
 }
 
 void UQuestUI::OnCloseButtonClicked()

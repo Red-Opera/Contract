@@ -16,6 +16,9 @@ struct FQuestInfo
 	FString questName;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Quest")
+	FString shortContent;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Quest")
 	FString content;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Quest")
