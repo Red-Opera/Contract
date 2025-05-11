@@ -17,7 +17,7 @@ struct FItemCount
 
     }
 
-    FItemCount(TSubclassOf<AItem> itemClass, int32 count = 1) 
+    FItemCount(TSubclassOf<AItem> itemClass, int32 count = 1)
         : itemClass(itemClass), count(count)
     {
 
@@ -69,4 +69,13 @@ class CONTRACT_API UQuestList : public UDataAsset
 public:
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Quest")
     TArray<FQuestInfo> quests;
+
+    UFUNCTION(BlueprintCallable, Category = "Quest")
+    bool AddQuest(const FQuestInfo& QuestInfo);
+
+    UFUNCTION(BlueprintPure, Category = "Quest")
+    bool HasQuest(const FString& QuestName) const;
+
+    UFUNCTION(BlueprintPure, Category = "Quest")
+    int32 FindQuestIndex(const FString& QuestName) const;
 };

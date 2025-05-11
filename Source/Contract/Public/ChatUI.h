@@ -41,6 +41,9 @@ public:
     // Tick 함수 재정의
     virtual void NativeTick(const FGeometry& myGeometry, float deltaTime) override;
 
+	UFUNCTION(BlueprintCallable, Category = "Chat")
+	void SetUIOwner(class AQuestManager* owner) { uiOwner = owner; }	// UI 소유자 설정
+
     // 대화 시작 메소드
     UFUNCTION(BlueprintCallable, Category = "Chat")
     void StartDialogue();
@@ -75,6 +78,9 @@ protected:
     // 대화 중인지 여부를 나타내는 플래그
     UPROPERTY(BlueprintReadOnly, Category = "Chat")
     bool isDialogueActive = false;
+
+	UPROPERTY(BlueprintReadOnly, Category = "Chat")
+	class AQuestManager* uiOwner;	// UI 소유자(퀘스트 매니저)
 
     // ===================================
     // UI 요소들
