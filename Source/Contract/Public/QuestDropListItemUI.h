@@ -46,6 +46,8 @@ public:
     void SetItemInfo(AItem* InItem, int32 InQuantity = 1);
 
 protected:
+	FString RemovePrefixSuffix(FString itemName);
+
     // 아이템 아이콘
     UPROPERTY(meta = (BindWidget))
     UImage* itemIcon;

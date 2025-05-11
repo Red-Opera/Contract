@@ -19,6 +19,9 @@ AItem::AItem()
 	// mesh 중력 활성화
 	itemMesh->SetSimulatePhysics(true);
 	itemMesh->SetEnableGravity(true);
+
+	// 기본값으로 아이콘 초기화
+	itemIcon = nullptr;
 }
 
 void AItem::RemoveItemMesh()

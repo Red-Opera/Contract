@@ -34,6 +34,10 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Item")
 	UStaticMeshComponent* itemMesh;
 
+	// 아이템 아이콘 이미지
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item")
+	UTexture2D* itemIcon;
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Interaction")
 	float interactionDistance = 120.0f;
 
