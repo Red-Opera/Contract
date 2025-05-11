@@ -63,6 +63,12 @@ bool UQuestItemUI::Initialize()
         return false;
     }
 
+    if (questDropListUI == nullptr)
+    {
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("퀘스트 드롭 리스트 UI가 바인딩되지 않았습니다."));
+		return false;
+    }
+
     // 기본 스타일 설정
     questBorder->SetBrushColor(defaultBackgroundColor);
 
@@ -140,4 +146,62 @@ void UQuestItemUI::UpdateRewardsInfo()
     // 경험치 보상 설정
     FText formattedExp = FText::AsNumber(questInfo.experiencePoints, &numberFormat);
     expRewardText->SetText(FText::Format(FText::FromString(TEXT("{0} XP")), formattedExp));
+}
+
+FReply UQuestItemUI::NativeOnMouseMove(const FGeometry& inGeometry, const FPointerEvent& inMouseEvent)
+{
+    // 마우스가 이동할 때마다 드롭다운 위치 업데이트
+    if (currentShowQuestDropListUI != nullptr && currentShowQuestDropListUI->GetVisibility() == ESlateVisibility::Visible)
+    {
+        FVector2D mousePosition = inMouseEvent.GetScreenSpacePosition();
+
+        // 커서 위치에 바로 표시
+        currentShowQuestDropListUI->ShowAtLocation(mousePosition);
+    }
+
+    return Super::NativeOnMouseMove(inGeometry, inMouseEvent);
+}
+
+void UQuestItemUI::NativeOnMouseEnter(const FGeometry& inGeometry, const FPointerEvent& inMouseEvent)
+{
+    Super::NativeOnMouseEnter(inGeometry, inMouseEvent);
+
+    // rewards 배열이 비어있는지 확인
+    if (questInfo.rewardItems.Num() == 0)
+        return;
+
+    // 드롭다운 UI가 아직 생성되지 않았으면 생성
+    if (currentShowQuestDropListUI == nullptr)
+    {
+        currentShowQuestDropListUI = CreateWidget<UQuestDropListUI>(GetWorld(), questDropListUI);
+
+        if (currentShowQuestDropListUI == nullptr)
+        {
+            GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("퀘스트 드롭 리스트 UI 인스턴스 생성 실패"));
+
+            return;
+        }
+
+        currentShowQuestDropListUI->AddToViewport(10); // 높은 Z-Order로 추가
+
+        // 아이템 개수 정보와 함께 전달
+        currentShowQuestDropListUI->SetRewardItemsWithQuantity(questInfo.rewardItems);
+    }
+
+    // 마우스 위치 가져오기
+    FVector2D mousePosition = inMouseEvent.GetScreenSpacePosition();
+
+    // 커서 바로 위에 표시 (오프셋 조정)
+    currentShowQuestDropListUI->ShowAtLocation(mousePosition);
+}
+
+void UQuestItemUI::NativeOnMouseLeave(const FPointerEvent& InMouseEvent)
+{
+    Super::NativeOnMouseLeave(InMouseEvent);
+
+    if (currentShowQuestDropListUI == nullptr)
+        return;
+
+    // 마우스가 떠나면 드롭다운 UI 숨기기
+    currentShowQuestDropListUI->Hide();
 }

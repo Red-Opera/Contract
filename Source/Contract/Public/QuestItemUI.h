@@ -1,7 +1,8 @@
-#pragma once
+ï»¿#pragma once
 
 #include "CoreMinimal.h"
 #include "QuestList.h"
+#include "QuestDropListUI.h"
 
 #include "Blueprint/UserWidget.h"
 #include "Components/TextBlock.h"
@@ -12,7 +13,7 @@
 #include "Blueprint/IUserObjectListEntry.h"
 #include "QuestItemUI.generated.h"
 
-// Äù½ºÆ® Ç×¸ñÀ» À§ÇÑ À§Á¬ Å¬·¡½º
+// í€˜ìŠ¤íŠ¸ í•­ëª©ì„ ìœ„í•œ ìœ„ì ¯ í´ë˜ìŠ¤
 UCLASS(BlueprintType, Blueprintable)
 class CONTRACT_API UQuestItemUI : public UUserWidget, public IUserObjectListEntry
 {
@@ -24,69 +25,81 @@ public:
     virtual void NativeOnListItemObjectSet(UObject* ListItemObject) override;
     virtual void NativeConstruct() override;
 
-    // Äù½ºÆ® Á¤º¸ ¼³Á¤
+    // í€˜ìŠ¤íŠ¸ ì •ë³´ ì„¤ì •
     void SetQuestInfo(const FQuestInfo& inQuestInfo);
 
-    // ÇöÀç À§Á¬ÀÇ Äù½ºÆ® Á¤º¸ °¡Á®¿À±â
+    // í˜„ì¬ ìœ„ì ¯ì˜ í€˜ìŠ¤íŠ¸ ì •ë³´ ê°€ì ¸ì˜¤ê¸°
     const FQuestInfo& GetQuestInfo() const { return questInfo; }
 
 protected:
-    // º¸»ó Á¤º¸ ¾÷µ¥ÀÌÆ® ÇÔ¼ö
+    // ë³´ìƒ ì •ë³´ ì—…ë°ì´íŠ¸ í•¨ìˆ˜
     void UpdateRewardsInfo();
 
-    // Äù½ºÆ® Á¤º¸ ÂüÁ¶
+    // ë§ˆìš°ìŠ¤ ì´ë²¤íŠ¸ ì²˜ë¦¬
+    virtual FReply NativeOnMouseMove(const FGeometry& inGeometry, const FPointerEvent& inMouseEvent) override;
+    virtual void NativeOnMouseEnter(const FGeometry& inGeometry, const FPointerEvent& inMouseEvent) override;
+    virtual void NativeOnMouseLeave(const FPointerEvent& inMouseEvent) override;
+
+    // ì•„ì´í…œ ë“œë¡­ ë¦¬ìŠ¤íŠ¸ UI
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
+    TSubclassOf<UQuestDropListUI> questDropListUI;
+
+    // ìƒì„±ëœ ì•„ì´í…œ ë“œë¡­ ë¦¬ìŠ¤íŠ¸ UI ì¸ìŠ¤í„´ìŠ¤
+    UQuestDropListUI* currentShowQuestDropListUI;
+
+    // í€˜ìŠ¤íŠ¸ ì •ë³´ ì°¸ì¡°
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Quest")
     FQuestInfo questInfo;
 
-    // Äù½ºÆ® ÀÌ¸§ ÅØ½ºÆ®
+    // í€˜ìŠ¤íŠ¸ ì´ë¦„ í…ìŠ¤íŠ¸
     UPROPERTY(meta = (BindWidget))
     UTextBlock* questNameText;
 
-    // Äù½ºÆ® ÂªÀº ³»¿ë ÅØ½ºÆ®
+    // í€˜ìŠ¤íŠ¸ ì§§ì€ ë‚´ìš© í…ìŠ¤íŠ¸
     UPROPERTY(meta = (BindWidget))
     UTextBlock* shortContentText;
 
-    // º¸»ó - µ· ÅØ½ºÆ®
+    // ë³´ìƒ - ëˆ í…ìŠ¤íŠ¸
     UPROPERTY(meta = (BindWidget))
     UTextBlock* moneyRewardText;
 
-    // º¸»ó - °æÇèÄ¡ ÅØ½ºÆ®
+    // ë³´ìƒ - ê²½í—˜ì¹˜ í…ìŠ¤íŠ¸
     UPROPERTY(meta = (BindWidget))
     UTextBlock* expRewardText;
 
-    // Äù½ºÆ® Ç×¸ñ ¹è°æ Å×µÎ¸®
+    // í€˜ìŠ¤íŠ¸ í•­ëª© ë°°ê²½ í…Œë‘ë¦¬
     UPROPERTY(meta = (BindWidget))
     UBorder* questBorder;
 
-    // º¸»ó ÄÁÅ×ÀÌ³Ê
+    // ë³´ìƒ ì»¨í…Œì´ë„ˆ
     UPROPERTY(meta = (BindWidget))
     UHorizontalBox* rewardsContainer;
 
-    // µ· ¾ÆÀÌÄÜ
+    // ëˆ ì•„ì´ì½˜
     UPROPERTY(meta = (BindWidget))
     UImage* moneyIcon;
 
-    // °æÇèÄ¡ ¾ÆÀÌÄÜ
+    // ê²½í—˜ì¹˜ ì•„ì´ì½˜
     UPROPERTY(meta = (BindWidget))
     UImage* expIcon;
 
-    // ¼±ÅÃ ¿©ºÎ (¼±ÅÃµÈ Ç×¸ñ °­Á¶ Ç¥½Ã)
+    // ì„ íƒ ì—¬ë¶€ (ì„ íƒëœ í•­ëª© ê°•ì¡° í‘œì‹œ)
     UPROPERTY(BlueprintReadOnly, Category = "Quest")
     bool isSelected = false;
 
-    // ±âº» ¹è°æ»ö
+    // ê¸°ë³¸ ë°°ê²½ìƒ‰
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Appearance")
     FLinearColor defaultBackgroundColor = FLinearColor(0.1f, 0.1f, 0.1f, 0.7f);
 
-    // ¼±ÅÃµÈ ¹è°æ»ö
+    // ì„ íƒëœ ë°°ê²½ìƒ‰
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Appearance")
     FLinearColor selectedBackgroundColor = FLinearColor(0.2f, 0.4f, 0.6f, 0.8f);
 
-    // µ· ¾ÆÀÌÄÜ ÅØ½ºÃ³
+    // ëˆ ì•„ì´ì½˜ í…ìŠ¤ì²˜
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Appearance")
     UTexture2D* goldIconTexture;
 
-    // °æÇèÄ¡ ¾ÆÀÌÄÜ ÅØ½ºÃ³
+    // ê²½í—˜ì¹˜ ì•„ì´ì½˜ í…ìŠ¤ì²˜
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Appearance")
     UTexture2D* expIconTexture;
 };
