@@ -1,4 +1,6 @@
 ﻿#include "ChatUI.h"
+#include "QuestManager.h"
+
 #include "Components/Border.h"
 #include "Components/InputComponent.h"
 #include "Components/Image.h"
@@ -149,7 +151,7 @@ void UChatUI::NextMessage()
     if (currentMessageIndex >= dialogueMessages.Num())
     {
         // 대화 종료
-        EndDialogue();
+        uiOwner->HideChatUI();
 
         return;
     }
@@ -198,12 +200,9 @@ void UChatUI::UpdateDialogueDisplay()
         // 텍스트 초기화
         messageText->SetText(FText::FromString(TEXT("")));
 
-
         // 타이핑 효과 진행 중에는 '계속하려면 스페이스' 텍스트 숨기기
         if (pressSpaceText != nullptr)
-        {
             pressSpaceText->SetVisibility(ESlateVisibility::Hidden);
-        }
     }
 
     // '계속하려면 스페이스' 텍스트 내용 설정 (타이핑 효과가 끝나면 표시됨)

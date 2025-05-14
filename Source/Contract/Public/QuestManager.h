@@ -1,6 +1,7 @@
 ﻿#pragma once
 
 #include "CoreMinimal.h"
+#include "QuestList.h"
 #include "GameFramework/Character.h"
 #include "QuestManager.generated.h"
 
@@ -38,7 +39,14 @@ public:
     UFUNCTION(BlueprintPure, Category = "UI")
     bool GetChatUIVisible() const { return isChatUIVisible; }
 
+    // 퀘스트 목록 가져오기
+    UFUNCTION(BlueprintPure, Category = "Quest")
+    const TArray<FQuestInfo>& GetQuests() const { return quests; }
+
 protected:
+    // 대화가 끝나면 퀘스트 추가
+    void AddQuestsAfterDialogue();
+
     // 상호작용 거리
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Interaction")
     float interactionDistance = 200.0f;
@@ -50,6 +58,14 @@ protected:
     // 대화 UI 인스턴스
     UPROPERTY(BlueprintReadOnly, Category = "UI")
     class UChatUI* chatUIInstance;
+
+    // 퀘스트 목록
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Quest")
+    TArray<FQuestInfo> quests;
+
+    // 퀘스트 데이터 에셋
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Quest")
+    UQuestList* questListAsset;
 
     class ACharacter* player;
     class APlayerController* playerController;
