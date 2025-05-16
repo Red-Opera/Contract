@@ -87,10 +87,6 @@ protected:
     UPROPERTY(BlueprintReadOnly, Category = "Quest")
     bool isSelected = false;
 
-    // 기본 배경색
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Appearance")
-    FLinearColor defaultBackgroundColor = FLinearColor(0.1f, 0.1f, 0.1f, 0.7f);
-
     // 선택된 배경색
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Appearance")
     FLinearColor selectedBackgroundColor = FLinearColor(0.2f, 0.4f, 0.6f, 0.8f);

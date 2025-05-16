@@ -6,6 +6,13 @@ void AGrenade::BeginPlay()
 {
 	Super::BeginPlay();
 
+	if (playerInputComponent == nullptr)
+	{
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("플레이어 입력 컴포넌트가 존재하지 않습니다."));
+
+		return;
+	}
+
 	playerInputComponent->BindAction(TEXT("Interaction"), IE_Pressed, this, &AGrenade::AddGrenade);
 }
 
