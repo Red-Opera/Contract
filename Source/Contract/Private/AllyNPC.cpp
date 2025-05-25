@@ -1,9 +1,9 @@
 ﻿#include "AllyNPC.h"
 #include "DrawDebugHelpers.h"
-
 #include "Components/SkeletalMeshComponent.h"
 #include "Perception/PawnSensingComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "Engine/World.h"
 
 AAllyNPC::AAllyNPC()
 {
@@ -14,37 +14,42 @@ AAllyNPC::AAllyNPC()
 	pawnSensingComp->SetPeripheralVisionAngle(60.0f);
 	pawnSensingComp->SightRadius = 1500.0f;
 
-	// 무기 메시 생성 및 캐릭터 메시에 부착
-	weaponMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("WeaponMesh"));
-	weaponMesh->SetupAttachment(GetMesh());
+	// Gun 시스템 초기화
+	equippedGun = nullptr;
+
+	// Gun 부착 오프셋 초기화 (필요에 따라 조정)
+	gunAttachOffset = FTransform(
+		FRotator(0.0f, 0.0f, 0.0f),     // 회전
+		FVector(0.0f, 0.0f, 0.0f),      // 위치
+		FVector(1.0f, 1.0f, 1.0f)       // 스케일
+	);
+
+	// 무기 장착 소켓들
+	rightHandSocketName = TEXT("RightGunTarget");
+	leftHandSocketName = TEXT("LeftGunTarget");
 
 	// 이동 설정 - 이동 방향으로만 회전하도록 설정
-	GetCharacterMovement()->bUseControllerDesiredRotation = false; // AI 컨트롤러 회전 비활성화
-	GetCharacterMovement()->bOrientRotationToMovement = true;      // 이동 방향으로 자동 회전 활성화
+	GetCharacterMovement()->bUseControllerDesiredRotation = false;
+	GetCharacterMovement()->bOrientRotationToMovement = true;
 	GetCharacterMovement()->MaxWalkSpeed = walkSpeed;
 	
 	// 자연스러운 회전을 위한 설정
-	GetCharacterMovement()->RotationRate = FRotator(0.0f, 200.0f, 0.0f); // 더 느린 회전 속도로 조정
+	GetCharacterMovement()->RotationRate = FRotator(0.0f, 200.0f, 0.0f);
 	
-	// 가속 및 감속 설정 - 부드러운 이동 시작/정지를 위함
+	// 가속 및 감속 설정 - 부드러운 이동 시작/정지
 	UCharacterMovementComponent* movementComp = GetCharacterMovement();
 	if (movementComp)
 	{
-		// 가속/감속 값 조정 - 낮은 값일수록 더 부드러운 전환
-		movementComp->MaxAcceleration = 800.0f;            // 기본값보다 낮춤 (원래 2048.0f)
-		movementComp->BrakingDecelerationWalking = 800.0f; // 기본값보다 낮춤 (원래 2048.0f)
-		movementComp->GroundFriction = 4.0f;               // 기본값보다 낮춤 (원래 8.0f)
-		
-		// 부드러운 이동을 위한 추가 설정
+		movementComp->MaxAcceleration = 800.0f;
+		movementComp->BrakingDecelerationWalking = 800.0f;
+		movementComp->GroundFriction = 4.0f;
 		movementComp->bRequestedMoveUseAcceleration = true;
-		
-		// 회전 속도 조정
 		movementComp->RotationRate = FRotator(0.0f, 200.0f, 0.0f);
 	}
 	
 	// 공중에서도 자연스러운 이동을 위한 설정
 	GetCharacterMovement()->BrakingDecelerationFalling = 600.0f;
-	GetCharacterMovement()->AirControl = 0.3f; // 공중에서 약간의 제어 허용
+	GetCharacterMovement()->AirControl = 0.3f;
 	
 	// Pawn이 컨트롤러 회전을 사용하지 않도록 설정
 	bUseControllerRotationYaw = false;
@@ -63,104 +68,229 @@ void AAllyNPC::BeginPlay()
 {
 	Super::BeginPlay();
 
-	// 게임 시작 시 무기 장착
-	EquipWeapon();
+	// 게임 시작 시 Gun 장착
+	EquipGun();
 }
 
-// Called every frame
 void AAllyNPC::Tick(float deltaTime)
 {
 	Super::Tick(deltaTime);
 
-	// 발사 로직 처리
-	// AI 컨트롤러에서 발사 여부를 결정하고, 실제 발사는 여기서 수행
-	if (isFiring)
+	// Gun 발사 로직 처리
+	if (isFiring && equippedGun)
 	{
-		// 발사 간격 타이머 증가
 		timeSinceLastShot += deltaTime;
-
-		// 발사 간격에 도달하면 발사 실행
 		if (timeSinceLastShot >= fireRate)
 		{
-			FireWeapon();
-			timeSinceLastShot = 0.0f; // 타이머 초기화
+			// Gun의 발사 함수 호출
+			if (equippedGun->currentAmmoEquipped > 0)
+			{
+				equippedGun->Fire();
+				timeSinceLastShot = 0.0f;
+			}
 		}
 	}
 }
 
-// Called to bind functionality to input
-void AAllyNPC::SetupPlayerInputComponent(UInputComponent* playerInputComponent)
+// === Gun 시스템 구현 ===
+
+void AAllyNPC::EquipGun()
 {
-	Super::SetupPlayerInputComponent(playerInputComponent);
-	// NPC이므로 플레이어 입력은 사용하지 않음
+    // Gun 블루프린트가 설정되어 있는지 확인
+    if (!gunBlueprint)
+    {
+        UE_LOG(LogTemp, Error, TEXT("AAllyNPC::EquipGun - Gun 블루프린트가 설정되지 않았습니다! 블루프린트에서 'Gun Blueprint' 변수를 설정해주세요."));
+        GEngine->AddOnScreenDebugMessage(-1, 10.0f, FColor::Red, TEXT("Gun 블루프린트가 설정되지 않음! 블루프린트에서 설정 필요!"));
+        return;
+    }
+    
+    UE_LOG(LogTemp, Log, TEXT("AAllyNPC::EquipGun - Gun 블루프린트: %s"), *gunBlueprint->GetName());
+    GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Blue, FString::Printf(TEXT("Gun 블루프린트: %s"), *gunBlueprint->GetName()));
+
+	// 기존 Gun이 있다면 제거
+	if (equippedGun)
+	{
+		UnequipGun();
+	}
+
+	// Gun 액터 생성
+	FVector spawnLocation = GetActorLocation();
+	FRotator spawnRotation = GetActorRotation();
+	
+	equippedGun = GetWorld()->SpawnActor<AGun>(gunBlueprint, spawnLocation, spawnRotation);
+	
+	if (equippedGun)
+	{
+		// Gun을 왼손 소켓에 부착
+		AttachGunToSocket();
+		
+		UE_LOG(LogTemp, Log, TEXT("AAllyNPC::EquipGun - Gun이 성공적으로 장착되었습니다."));
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("AAllyNPC::EquipGun - Gun 액터 생성에 실패했습니다."));
+	}
 }
+
+void AAllyNPC::UnequipGun()
+{
+	if (equippedGun)
+	{
+		// Gun을 소켓에서 분리
+		DetachGunFromSocket();
+		
+		// Gun 액터 삭제
+		equippedGun->Destroy();
+		equippedGun = nullptr;
+		
+		UE_LOG(LogTemp, Log, TEXT("AAllyNPC::UnequipGun - Gun이 해제되었습니다."));
+	}
+}
+
+void AAllyNPC::AttachGunToSocket()
+{
+    if (!equippedGun)
+        return;
+
+    USkeletalMeshComponent* characterMesh = GetMesh();
+    if (!characterMesh)
+    {
+        UE_LOG(LogTemp, Error, TEXT("AAllyNPC::AttachGunToSocket - 캐릭터 메시를 찾을 수 없습니다."));
+        return;
+    }
+
+    // 오른손 소켓 존재 확인 (Gun을 오른손에 장착)
+    if (!characterMesh->DoesSocketExist(rightHandSocketName))
+    {
+        UE_LOG(LogTemp, Error, TEXT("AAllyNPC::AttachGunToSocket - 소켓 '%s'을 찾을 수 없습니다."), *rightHandSocketName.ToString());
+        return;
+    }
+
+    // Gun을 오른손 소켓에 부착
+    equippedGun->AttachToComponent(
+        characterMesh,
+        FAttachmentTransformRules::SnapToTargetIncludingScale,
+        rightHandSocketName
+    );
+
+    // 추가 오프셋 적용
+    equippedGun->SetActorRelativeTransform(gunAttachOffset);
+
+    // NPC 장착 상태 설정
+    equippedGun->SetEquippedByNPC(true);
+
+    UE_LOG(LogTemp, Log, TEXT("AAllyNPC::AttachGunToSocket - Gun이 소켓 '%s'에 부착되었습니다."), *rightHandSocketName.ToString());
+}
+
+void AAllyNPC::DetachGunFromSocket()
+{
+	if (equippedGun)
+	{
+		// NPC 장착 상태 해제
+		equippedGun->SetEquippedByNPC(false);
+		
+		equippedGun->DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
+	}
+}
+
+void AAllyNPC::StartGunFiring()
+{
+	if (equippedGun)
+	{
+		isFiring = true;
+		timeSinceLastShot = fireRate; // 즉시 첫 발사 가능
+		equippedGun->StartFire(); // Gun의 발사 함수 호출
+		UE_LOG(LogTemp, Log, TEXT("AAllyNPC::StartGunFiring - Gun 발사 시작"));
+	}
+}
+
+void AAllyNPC::StopGunFiring()
+{
+	if (equippedGun)
+	{
+		isFiring = false;
+		equippedGun->StopFire(); // Gun의 발사 중지 함수 호출
+		UE_LOG(LogTemp, Log, TEXT("AAllyNPC::StopGunFiring - Gun 발사 중지"));
+	}
+}
+
+void AAllyNPC::ReloadGun()
+{
+	if (equippedGun)
+	{
+		equippedGun->Reload(); // Gun의 재장전 함수 호출
+		UE_LOG(LogTemp, Log, TEXT("AAllyNPC::ReloadGun - Gun 재장전"));
+	}
+}
+
+FTransform AAllyNPC::GetRightHandIKTransform() const
+{
+    // Gun이 장착되어 있지 않은 경우
+    if (!equippedGun)
+    {
+        UE_LOG(LogTemp, Warning, TEXT("AAllyNPC::GetRightHandIKTransform - Gun이 장착되지 않음"));
+        return FTransform::Identity;
+    }
+
+    // Gun에서 오른손 파지 위치 가져오기
+    return equippedGun->GetRightHandGripTransform();
+}
+
+FTransform AAllyNPC::GetLeftHandIKTransform() const
+{
+    // Gun이 장착되어 있지 않은 경우
+    if (!equippedGun)
+    {
+        UE_LOG(LogTemp, Warning, TEXT("AAllyNPC::GetLeftHandIKTransform - Gun이 장착되지 않음"));
+        return FTransform::Identity;
+    }
+
+    // Gun에서 왼손 보조 파지 위치 가져오기
+    return equippedGun->GetLeftHandGripTransform();
+}
+
+// === 이동 시스템 ===
 
 void AAllyNPC::UpdateMovementState(bool isRunning, const FVector& direction)
 {
-	// 이동 벡터를 애니메이션 시스템을 위해 업데이트
-	// 실제 이동은 AI 컨트롤러에서 처리되고, 여기서는 애니메이션 파라미터만 설정
-	UpdateMovementVector(direction, isRunning);
+    // 이동 벡터를 애니메이션 시스템을 위해 업데이트
+    UpdateMovementVector(direction, isRunning);
 }
 
 void AAllyNPC::UpdateMovementVector(const FVector& direction, bool isRunning)
 {
-	// 월드 좌표계의 이동 방향을 캐릭터 로컬 좌표계로 변환
-	FVector localDirection = GetActorTransform().InverseTransformVectorNoScale(direction);
-	
-	// 목표 이동 벡터 계산 (달리기 상태에 따라 스케일 조정)
-	FVector2D targetMovementVector;
-	targetMovementVector.X = localDirection.X * (isRunning ? 2.0f : 1.0f);  // 앞/뒤 이동
-	targetMovementVector.Y = localDirection.Y * (isRunning ? 2.0f : 1.0f);  // 좌/우 이동
-	
-	// 부드러운 변화를 위한 이동 벡터 보간 적용
-	movementVector.X = FMath::FInterpTo(movementVector.X, targetMovementVector.X, GetWorld()->GetDeltaSeconds(), movementVectorInterpSpeed);
-	movementVector.Y = FMath::FInterpTo(movementVector.Y, targetMovementVector.Y, GetWorld()->GetDeltaSeconds(), movementVectorInterpSpeed);
-	
-	// 이전 벡터 저장 (필요시 사용)
-	previousMovementVector = movementVector;
+    // 월드 좌표계의 이동 방향을 캐릭터 로컬 좌표계로 변환
+    FVector localDirection = GetActorTransform().InverseTransformVectorNoScale(direction);
+    
+    // 목표 이동 벡터 계산 (달리기 상태에 따라 스케일 조정)
+    FVector2D targetMovementVector;
+    targetMovementVector.X = localDirection.X * (isRunning ? 2.0f : 1.0f);  // 앞/뒤 이동
+    targetMovementVector.Y = localDirection.Y * (isRunning ? 2.0f : 1.0f);  // 좌/우 이동
+    
+    // 부드러운 변화를 위한 이동 벡터 보간 적용
+    movementVector.X = FMath::FInterpTo(movementVector.X, targetMovementVector.X, GetWorld()->GetDeltaSeconds(), movementVectorInterpSpeed);
+    movementVector.Y = FMath::FInterpTo(movementVector.Y, targetMovementVector.Y, GetWorld()->GetDeltaSeconds(), movementVectorInterpSpeed);
+    
+    // 이전 벡터 저장
+    previousMovementVector = movementVector;
+}
+
+// === 기존 함수들 (호환성 유지) ===
+
+void AAllyNPC::SetupPlayerInputComponent(UInputComponent* playerInputComponent)
+{
+    Super::SetupPlayerInputComponent(playerInputComponent);
+    // NPC이므로 플레이어 입력은 사용하지 않음
 }
 
 void AAllyNPC::StartFiring()
 {
-	isFiring = true;
-	timeSinceLastShot = fireRate; // 즉시 첫 발사가 가능하도록 설정
+    // 새로운 Gun 시스템 사용
+    StartGunFiring();
 }
 
 void AAllyNPC::StopFiring()
 {
-	isFiring = false;
-}
-
-void AAllyNPC::EquipWeapon()
-{
-	// 무기 장착 로직 (향후 구현)
-}
-
-void AAllyNPC::FireWeapon()
-{
-	// 총알 발사 효과 및 로직
-	FVector muzzleLocation = weaponMesh->GetSocketLocation("MuzzleFlash");
-	FRotator muzzleRotation = weaponMesh->GetSocketRotation("MuzzleFlash");
-
-	// 라인 트레이스를 사용한 간단한 총알 로직
-	FVector traceEnd = muzzleLocation + muzzleRotation.Vector() * 10000.0f;
-
-	// 충돌 검사 설정
-	FHitResult hitResult;
-	FCollisionQueryParams queryParams;
-	queryParams.AddIgnoredActor(this); // 자기 자신과의 충돌 무시
-
-	// 라인 트레이스 수행
-	if (GetWorld()->LineTraceSingleByChannel(hitResult, muzzleLocation, traceEnd, ECC_Visibility, queryParams))
-	{
-		// 물체에 명중했을 경우 (빨간색 라인으로 표시)
-		DrawDebugLine(GetWorld(), muzzleLocation, hitResult.ImpactPoint, FColor::Red, false, 1.0f, 0, 1.0f);
-
-		// 데미지 처리 로직 (향후 구현)
-	}
-	else
-	{
-		// 명중하지 않았을 경우 (파란색 라인으로 표시)
-		DrawDebugLine(GetWorld(), muzzleLocation, traceEnd, FColor::Blue, false, 1.0f, 0, 1.0f);
-	}
+    // 새로운 Gun 시스템 사용
+    StopGunFiring();
 }

@@ -1,16 +1,18 @@
-#include "AllyNPCAnimation.h"
+ï»¿#include "AllyNPCAnimation.h"
+#include "AllyNPC.h"
+
+#include "Animation/AnimMontage.h"
 #include "GameFramework/Character.h"
 #include "GameFramework/CharacterMovementComponent.h"
-#include "Kismet/GameplayStatics.h"
-#include "Kismet/KismetMathLibrary.h" // ¼öÇĞ ÇÔ¼ö »ç¿ëÀ» À§ÇØ Ãß°¡
 #include "NiagaraFunctionLibrary.h"
 #include "NiagaraComponent.h"
+#include "Kismet/GameplayStatics.h"
+#include "Kismet/KismetMathLibrary.h"
 #include "Sound/SoundBase.h"
-#include "Animation/AnimMontage.h"
 
 UAllyNPCAnimation::UAllyNPCAnimation()
 {
-    // ÃÊ±â°ª ¼³Á¤
+    // ì´ˆê¸°ê°’ ì„¤ì •
     Speed = 0.0f;
     Direction = 0.0f;
     isInAir = false;
@@ -20,7 +22,7 @@ UAllyNPCAnimation::UAllyNPCAnimation()
     isFiring = false;
     isReloading = false;
     isEquipping = false;
-    currentWeaponType = 2; // ±âº»°ªÀ¸·Î ¼ÒÃÑ ¼³Á¤
+    currentWeaponType = 2; // ê¸°ë³¸ê°’ìœ¼ë¡œ ì†Œì´ ì„¤ì •
 
     isHit = false;
     isDead = false;
@@ -36,74 +38,89 @@ UAllyNPCAnimation::UAllyNPCAnimation()
 
 void UAllyNPCAnimation::NativeInitializeAnimation()
 {
-    // Ä³¸¯ÅÍ ·¹ÆÛ·±½º ÃÊ±âÈ­
+    // ìºë¦­í„° ë ˆí¼ëŸ°ìŠ¤ ì´ˆê¸°í™”
     owningCharacter = Cast<ACharacter>(TryGetPawnOwner());
 }
 
 void UAllyNPCAnimation::NativeUpdateAnimation(float DeltaSeconds)
 {
-    // Ä³¸¯ÅÍ ·¹ÆÛ·±½º°¡ À¯È¿ÇÑÁö È®ÀÎ
-    if (!owningCharacter)
+    // ìºë¦­í„° ë ˆí¼ëŸ°ìŠ¤ê°€ ìœ íš¨í•œì§€ í™•ì¸
+    if (owningCharacter == nullptr)
     {
         owningCharacter = Cast<ACharacter>(TryGetPawnOwner());
-        if (!owningCharacter)
+
+        if (owningCharacter == nullptr)
+        {
+			GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Red, TEXT("UAllyNPCAnimation: Owning character is null!"));
+
             return;
+        }
     }
 
-    // Ä³¸¯ÅÍ ÀÌµ¿ ÄÄÆ÷³ÍÆ® °¡Á®¿À±â
+    // ìºë¦­í„° ì´ë™ ì»´í¬ë„ŒíŠ¸ ê°€ì ¸ì˜¤ê¸°
     UCharacterMovementComponent* movementComponent = owningCharacter->GetCharacterMovement();
-    if (!movementComponent)
+
+    if (movementComponent == nullptr)
         return;
 
-    // ¼Óµµ °è»ê
-    FVector velocity = owningCharacter->GetVelocity();
-    FVector lateralVelocity = FVector(velocity.X, velocity.Y, 0.0f);
-    Speed = lateralVelocity.Size();
+    // ì´ë™ ë²¡í„° ê°€ì ¸ì˜¤ê¸° (AAllyNPCì—ì„œ ì¶”ê°€í•œ ê¸°ëŠ¥)
+    AAllyNPC* allyNPC = Cast<AAllyNPC>(owningCharacter);
 
-    // ÀÌµ¿ ¹æÇâ °è»ê (ÀüÈÄÁÂ¿ì)
-    if (Speed > 0.0f)
-    {
-        FRotator ActorRotation = owningCharacter->GetActorRotation();
-        FVector forwardVector = ActorRotation.Vector();
-        FVector rightVector = FRotator(0.0f, ActorRotation.Yaw, 0.0f).Vector().RightVector;
+    // NPCì˜ ì´ë™ ë²¡í„° ê°€ì ¸ì˜¤ê¸°
+    if (allyNPC != nullptr)
+        MovementVector = allyNPC->movementVector;
 
-        // Á¤±ÔÈ­µÈ ¼Óµµ º¤ÅÍ
-        FVector normalizedVelocity = lateralVelocity.GetSafeNormal();
-
-        // ÀüÈÄ ¹æÇâ (-1: ÈÄ¹æ, 1: Àü¹æ)
-        float forwardAmount = FVector::DotProduct(normalizedVelocity, forwardVector);
-        // ÁÂ¿ì ¹æÇâ (-1: ¿ŞÂÊ, 1: ¿À¸¥ÂÊ)
-        float rightAmount = FVector::DotProduct(normalizedVelocity, rightVector);
-
-        // ¹æÇâ °ªÀ» -180¿¡¼­ 180 »çÀÌÀÇ °¢µµ·Î º¯È¯
-        Direction = FMath::RadiansToDegrees(FMath::Atan2(rightAmount, forwardAmount));
-    }
     else
     {
-        Direction = 0.0f;
+        // ì¼ë°˜ ìºë¦­í„°ì¸ ê²½ìš°, ê¸°ì¡´ Speedì™€ Direction ì‚¬ìš©
+        // ì†ë„ ê³„ì‚°
+        FVector velocity = owningCharacter->GetVelocity();
+        FVector lateralVelocity = FVector(velocity.X, velocity.Y, 0.0f);
+        Speed = lateralVelocity.Size();
+
+        // ì´ë™ ë°©í–¥ ê³„ì‚° (ì „í›„ì¢Œìš°)
+        if (Speed > 0.0f)
+        {
+            FRotator actorRotation = owningCharacter->GetActorRotation();
+            FVector forwardVector = actorRotation.Vector();
+            FVector rightVector = FRotator(0.0f, actorRotation.Yaw, 0.0f).Vector().RightVector;
+
+            // ì •ê·œí™”ëœ ì†ë„ ë²¡í„°
+            FVector normalizedVelocity = lateralVelocity.GetSafeNormal();
+
+            
+            float forwardAmount = FVector::DotProduct(normalizedVelocity, forwardVector);   // ì „ë°© ë¹„ìœ¨(-1: í›„ì§„, 1 : ì „ì§„)
+            float rightAmount = FVector::DotProduct(normalizedVelocity, rightVector);       // ì¢Œìš° ë¹„ìœ¨ (-1: ì™¼ìª½, 1: ì˜¤ë¥¸ìª½)
+
+            // ë°©í–¥ ê°ë„ -180ë¶€í„° 180 ì‚¬ì´ë¡œ ë³€í™˜
+            Direction = FMath::RadiansToDegrees(FMath::Atan2(rightAmount, forwardAmount));
+        }
+
+        else
+            Direction = 0.0f;
     }
 
-    // ¶° ÀÖ´ÂÁö È®ÀÎ
+    // ê³µì¤‘ì— ìˆëŠ”ì§€ í™•ì¸
     isInAir = movementComponent->IsFalling();
 
-    // ¾É¾Æ ÀÖ´ÂÁö È®ÀÎ
+    // ìª¼ê·¸ë ¤ ìˆëŠ”ì§€ í™•ì¸
     isCrouching = movementComponent->IsCrouching();
 
-    // Á¶ÁØ ¿ÀÇÁ¼Â ¾÷µ¥ÀÌÆ® (ºÎµå·¯¿î º¸°£)
+    // ì¡°ì¤€ ì˜¤í”„ì…‹ ì—…ë°ì´íŠ¸ (ìƒì²´ íšŒì „ìš©)
     FRotator aimRotation = owningCharacter->GetBaseAimRotation();
     FRotator actorRotation = owningCharacter->GetActorRotation();
     FRotator deltaRotation = aimRotation - actorRotation;
 
-    // °ªÀ» -180¿¡¼­ 180 »çÀÌ·Î Á¤±ÔÈ­
-    // NormalizeAxis ´ë½Å UKismetMathLibrary »ç¿ë
+    // ê°ë„ -180ë¶€í„° 180 ì‚¬ì´ë¡œ ì •ê·œí™”
+    // NormalizeAxis ì‚¬ìš© (UKismetMathLibrary í•¨ìˆ˜)
     deltaRotation.Yaw = UKismetMathLibrary::NormalizeAxis(deltaRotation.Yaw);
     deltaRotation.Pitch = UKismetMathLibrary::NormalizeAxis(deltaRotation.Pitch);
 
-    // ºÎµå·´°Ô º¸°£
+    // ë¶€ë“œëŸ¬ìš´ ì¡°ì¤€ ë³´ê°„
     aimOffsetYaw = FMath::FInterpTo(aimOffsetYaw, deltaRotation.Yaw, DeltaSeconds, aimInterpSpeed);
     aimOffsetPitch = FMath::FInterpTo(aimOffsetPitch, deltaRotation.Pitch, DeltaSeconds, aimInterpSpeed);
 
-    // Á×Àº »óÅÂÀÏ °æ¿ì ´Ù¸¥ ¸ğµç ÇÃ·¡±× ºñÈ°¼ºÈ­
+    // ì‚¬ë§ ìƒíƒœì¼ ê²½ìš° ë‹¤ë¥¸ ëª¨ë“  í”Œë˜ê·¸ ë¹„í™œì„±í™”
     if (isDead)
     {
         isAiming = false;
@@ -123,7 +140,7 @@ void UAllyNPCAnimation::PlayFireMontage()
 
     isFiring = true;
 
-    // »ç¿îµå Àç»ı
+    // ë°œì‚¬ ì†Œë¦¬
     if (fireSound)
     {
         UGameplayStatics::PlaySoundAtLocation(
@@ -133,10 +150,10 @@ void UAllyNPCAnimation::PlayFireMontage()
         );
     }
 
-    // ÃÑ±¸ È­¿° ÀÌÆåÆ® Àç»ı
+    // ì´êµ¬ í™”ì—¼ ì´í™íŠ¸ ì¬ìƒ
     if (MuzzleFlash && owningCharacter)
     {
-        // ÃÑ±¸ ¼ÒÄÏ À§Ä¡¿¡ ÀÌÆåÆ® »ı¼º
+        // ì´êµ¬ ì†Œì¼“ ìœ„ì¹˜ì— ì´í™íŠ¸ ìƒì„±
         USkeletalMeshComponent* mesh = owningCharacter->GetMesh();
         if (mesh)
         {
@@ -156,14 +173,16 @@ void UAllyNPCAnimation::PlayFireMontage()
         }
     }
 
-    // ÅºÇÇ ¹èÃâ ÀÌÆåÆ® Àç»ı
+    // íƒ„í”¼ ë°°ì¶œ ì´í™íŠ¸ ì¬ìƒ
     if (ejectedShell && owningCharacter)
     {
-        // ÅºÇÇ ¹èÃâ ¼ÒÄÏ À§Ä¡¿¡ ÀÌÆåÆ® »ı¼º
+        // íƒ„í”¼ ë°°ì¶œ ì†Œì¼“ ìœ„ì¹˜ì— ì´í™íŠ¸ ìƒì„±
         USkeletalMeshComponent* mesh = owningCharacter->GetMesh();
+
         if (mesh)
         {
             FName shellEjectSocketName = FName("ShellEjectSocket");
+
             if (mesh->DoesSocketExist(shellEjectSocketName))
             {
                 FVector shellLocation = mesh->GetSocketLocation(shellEjectSocketName);
@@ -179,12 +198,12 @@ void UAllyNPCAnimation::PlayFireMontage()
         }
     }
 
-    // ¸ùÅ¸ÁÖ Àç»ı
+    // ëª½íƒ€ì£¼ ì¬ìƒ
     float playRate = 1.0f;
     float startingPosition = 0.0f;
     Montage_Play(fireMontage, playRate, EMontagePlayReturnType::MontageLength, startingPosition);
 
-    // ¸ùÅ¸ÁÖ Á¾·á ÈÄ ÀÚµ¿À¸·Î ¹ß»ç »óÅÂ ÇØÁ¦
+    // ëª½íƒ€ì£¼ ì¢…ë£Œ í›„ ìë™ìœ¼ë¡œ ë°œì‚¬ ìƒíƒœ í•´ì œ
     FTimerHandle timerHandle_ResetFiring;
     GetWorld()->GetTimerManager().SetTimer(timerHandle_ResetFiring, [this]()
         {
@@ -199,11 +218,11 @@ void UAllyNPCAnimation::PlayReloadMontage()
 
     isReloading = true;
 
-    // ÀçÀåÀü ¸ùÅ¸ÁÖ Àç»ı
+    // ì¬ì¥ì „ ëª½íƒ€ì£¼ ì¬ìƒ
     float PlayRate = 1.0f;
     Montage_Play(reloadMontage, PlayRate);
 
-    // ¸ùÅ¸ÁÖ Á¾·á ÈÄ ÀÚµ¿À¸·Î ÀçÀåÀü »óÅÂ ÇØÁ¦
+    // ëª½íƒ€ì£¼ ì¢…ë£Œ í›„ ìë™ìœ¼ë¡œ ì¬ì¥ì „ ìƒíƒœ í•´ì œ
     FTimerHandle TimerHandle_ResetReloading;
     GetWorld()->GetTimerManager().SetTimer(TimerHandle_ResetReloading, [this]()
         {
@@ -218,16 +237,16 @@ void UAllyNPCAnimation::PlayEquipMontage()
 
     isEquipping = true;
 
-    // Àåºñ ÀåÂø ¸ùÅ¸ÁÖ Àç»ı
+    // ë¬´ê¸° ì¥ì°© ëª½íƒ€ì£¼ ì¬ìƒ
     float PlayRate = 1.0f;
     Montage_Play(equipMontage, PlayRate);
 
-    // ¸ùÅ¸ÁÖ Á¾·á ÈÄ ÀÚµ¿À¸·Î ÀåÂø »óÅÂ ÇØÁ¦
+    // ëª½íƒ€ì£¼ ì¢…ë£Œ í›„ ìë™ìœ¼ë¡œ ì¥ì°© ìƒíƒœ í•´ì œ
     FTimerHandle TimerHandle_ResetEquipping;
     GetWorld()->GetTimerManager().SetTimer(TimerHandle_ResetEquipping, [this]()
-        {
-            isEquipping = false;
-        }, equipMontage->GetPlayLength() * (1.0f / PlayRate), false);
+    {
+        isEquipping = false;
+    }, equipMontage->GetPlayLength() * (1.0f / PlayRate), false);
 }
 
 void UAllyNPCAnimation::PlayThrowGrenadeMontage()
@@ -237,16 +256,16 @@ void UAllyNPCAnimation::PlayThrowGrenadeMontage()
 
     isThrowingGrenade = true;
 
-    // ¼ö·ùÅº ÅõÃ´ ¸ùÅ¸ÁÖ Àç»ı
+    // ìˆ˜ë¥˜íƒ„ íˆ¬ì²™ ëª½íƒ€ì£¼ ì¬ìƒ
     float PlayRate = 1.0f;
     Montage_Play(throwGrenadeMontage, PlayRate);
 
-    // ¸ùÅ¸ÁÖ Á¾·á ÈÄ ÀÚµ¿À¸·Î ÅõÃ´ »óÅÂ ÇØÁ¦
+    // ëª½íƒ€ì£¼ ì¢…ë£Œ í›„ ìë™ìœ¼ë¡œ íˆ¬ì²™ ìƒíƒœ í•´ì œ
     FTimerHandle TimerHandle_ResetThrowing;
     GetWorld()->GetTimerManager().SetTimer(TimerHandle_ResetThrowing, [this]()
-        {
-            isThrowingGrenade = false;
-        }, throwGrenadeMontage->GetPlayLength() * (1.0f / PlayRate), false);
+    {
+        isThrowingGrenade = false;
+    }, throwGrenadeMontage->GetPlayLength() * (1.0f / PlayRate), false);
 }
 
 void UAllyNPCAnimation::PlayHitReactMontage(FName HitDirection)
@@ -256,29 +275,32 @@ void UAllyNPCAnimation::PlayHitReactMontage(FName HitDirection)
 
     isHit = true;
 
-    // ÇÇ°İ ¸ùÅ¸ÁÖ Àç»ı
+    // í”¼ê²© ëª½íƒ€ì£¼ ì¬ìƒ
     float playRate = 1.0f;
     FString sectionName = "HitDefault";
 
-    // ¸ÂÀº ¹æÇâ¿¡ µû¶ó ´Ù¸¥ ¼½¼Ç Àç»ı
+    // í”¼ê²© ë°©í–¥ì— ë”°ë¥¸ ë‹¤ë¥¸ ì„¹ì…˜ ì¬ìƒ
     if (HitDirection == FName("Front"))
         sectionName = "HitFront";
+
     else if (HitDirection == FName("Back"))
         sectionName = "HitBack";
+
     else if (HitDirection == FName("Left"))
         sectionName = "HitLeft";
+
     else if (HitDirection == FName("Right"))
         sectionName = "HitRight";
 
     Montage_Play(hitReactMontage, playRate);
     Montage_JumpToSection(FName(*sectionName), hitReactMontage);
 
-    // ¸ùÅ¸ÁÖ Á¾·á ÈÄ ÀÚµ¿À¸·Î ÇÇ°İ »óÅÂ ÇØÁ¦
+    // ëª½íƒ€ì£¼ ì¢…ë£Œ í›„ ìë™ìœ¼ë¡œ í”¼ê²© ìƒíƒœ í•´ì œ
     FTimerHandle timerHandle_ResetHit;
     GetWorld()->GetTimerManager().SetTimer(timerHandle_ResetHit, [this]()
-        {
-            isHit = false;
-        }, hitReactMontage->GetPlayLength() * (1.0f / playRate), false);
+    {
+        isHit = false;
+    }, hitReactMontage->GetPlayLength() * (1.0f / playRate), false);
 }
 
 void UAllyNPCAnimation::PlayDeathMontage()
@@ -288,15 +310,15 @@ void UAllyNPCAnimation::PlayDeathMontage()
 
     isDead = true;
 
-    // »ç¸Á ¸ùÅ¸ÁÖ Àç»ı
-    float PlayRate = 1.0f;
+    // ì‚¬ë§ ëª½íƒ€ì£¼ ì¬ìƒ
+    float playRate = 1.0f;
 
-    // ·£´ı »ç¸Á ¾Ö´Ï¸ŞÀÌ¼Ç ¼±ÅÃ
-    // GetSectionNames ÇÔ¼ö°¡ ¾øÀ¸¹Ç·Î ¸ùÅ¸ÁÖ¿¡¼­ ¼½¼Ç ÀÌ¸§ ¼öµ¿À¸·Î Ã³¸®
+    // ëœë¤ ì‚¬ë§ ì• ë‹ˆë©”ì´ì…˜ ì„ íƒ
+    // GetSectionNames í•¨ìˆ˜ê°€ ì—†ìœ¼ë¯€ë¡œ ëª½íƒ€ì£¼ì—ì„œ ì„¹ì…˜ ì´ë¦„ ì§ì ‘ ì •ì˜
     TArray<FName> sectionNames;
 
-    // DeathMontage¿¡¼­ »ç¿ë °¡´ÉÇÑ ¼½¼Ç ÀÌ¸§À» Á÷Á¢ Ãß°¡
-    // ½ÇÁ¦·Î´Â ¸ùÅ¸ÁÖ¿¡ Á¤ÀÇµÈ ¼½¼Ç ÀÌ¸§¿¡ ¸Â°Ô ¼öÁ¤ ÇÊ¿ä
+    // DeathMontageì—ì„œ ì‚¬ìš© ê°€ëŠ¥í•œ ì„¹ì…˜ ì´ë¦„ ì§ì ‘ ì¶”ê°€
+    // ì‹¤ì œë¡œëŠ” ëª½íƒ€ì£¼ì— ì •ì˜ëœ ì„¹ì…˜ ì´ë¦„ì— ë§ê²Œ ìˆ˜ì • í•„ìš”
     sectionNames.Add(FName("Death_Front"));
     sectionNames.Add(FName("Death_Back"));
     sectionNames.Add(FName("Death_Left"));
@@ -307,11 +329,52 @@ void UAllyNPCAnimation::PlayDeathMontage()
         int32 sectionIndex = FMath::RandRange(0, sectionNames.Num() - 1);
         FName sectionName = sectionNames[sectionIndex];
 
-        Montage_Play(deathMontage, PlayRate);
+        Montage_Play(deathMontage, playRate);
         Montage_JumpToSection(sectionName, deathMontage);
     }
+
     else
+        Montage_Play(deathMontage, playRate);
+}
+
+FTransform UAllyNPCAnimation::GetRightHandIKTransform() const
+{
+    // ì†Œìœ  ìºë¦­í„°ê°€ ìœ íš¨í•œì§€ í™•ì¸
+    if (!owningCharacter)
     {
-        Montage_Play(deathMontage, PlayRate);
+        UE_LOG(LogTemp, Warning, TEXT("UAllyNPCAnimation::GetRightHandIKTransform - owningCharacterê°€ null"));
+        return FTransform::Identity;
     }
+
+    // AllyNPCë¡œ ìºìŠ¤íŠ¸
+    AAllyNPC* allyNPC = Cast<AAllyNPC>(owningCharacter);
+    if (!allyNPC)
+    {
+        UE_LOG(LogTemp, Warning, TEXT("UAllyNPCAnimation::GetRightHandIKTransform - AllyNPCë¡œ ìºìŠ¤íŠ¸ ì‹¤íŒ¨"));
+        return FTransform::Identity;
+    }
+
+    // AllyNPCì—ì„œ ì˜¤ë¥¸ì† IK íŠ¸ëœìŠ¤í¼ ê°€ì ¸ì˜¤ê¸°
+    return allyNPC->GetRightHandIKTransform();
+}
+
+FTransform UAllyNPCAnimation::GetLeftHandIKTransform() const
+{
+    // ì†Œìœ  ìºë¦­í„°ê°€ ìœ íš¨í•œì§€ í™•ì¸
+    if (!owningCharacter)
+    {
+        UE_LOG(LogTemp, Warning, TEXT("UAllyNPCAnimation::GetLeftHandIKTransform - owningCharacterê°€ null"));
+        return FTransform::Identity;
+    }
+
+    // AllyNPCë¡œ ìºìŠ¤íŠ¸
+    AAllyNPC* allyNPC = Cast<AAllyNPC>(owningCharacter);
+    if (!allyNPC)
+    {
+        UE_LOG(LogTemp, Warning, TEXT("UAllyNPCAnimation::GetLeftHandIKTransform - AllyNPCë¡œ ìºìŠ¤íŠ¸ ì‹¤íŒ¨"));
+        return FTransform::Identity;
+    }
+
+    // AllyNPCì—ì„œ ì™¼ì† IK íŠ¸ëœìŠ¤í¼ ê°€ì ¸ì˜¤ê¸°
+    return allyNPC->GetLeftHandIKTransform();
 }
