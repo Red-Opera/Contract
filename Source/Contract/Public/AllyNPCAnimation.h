@@ -1,12 +1,12 @@
-#pragma once
+ï»¿#pragma once
 
 #include "CoreMinimal.h"
 #include "Animation/AnimInstance.h"
 #include "AllyNPCAnimation.generated.h"
 
 /**
- * ÃÑ »ç°İÇÏ´Â º´»ç Ä³¸¯ÅÍÀÇ ¾Ö´Ï¸ŞÀÌ¼Ç ºí·çÇÁ¸°Æ®¸¦ À§ÇÑ Å¬·¡½ºÀÔ´Ï´Ù.
- * ÀÌµ¿, »ç°İ, ÀçÀåÀü, ¾öÆó, ÇÇ°İ, »ç¸Á µîÀÇ ¾Ö´Ï¸ŞÀÌ¼Ç »óÅÂ¸¦ °ü¸®ÇÕ´Ï´Ù.
+ * ì´ ì‚¬ê²©í•˜ëŠ” ë³‘ì‚¬ ìºë¦­í„°ì˜ ì• ë‹ˆë©”ì´ì…˜ ë¸”ë£¨í”„ë¦°íŠ¸ë¥¼ ìœ„í•œ í´ë˜ìŠ¤ì…ë‹ˆë‹¤.
+ * ì´ë™, ì‚¬ê²©, ì¬ì¥ì „, ì—„í, í”¼ê²©, ì‚¬ë§ ë“±ì˜ ì• ë‹ˆë©”ì´ì…˜ ìƒíƒœë¥¼ ê´€ë¦¬í•©ë‹ˆë‹¤.
  */
 UCLASS()
 class CONTRACT_API UAllyNPCAnimation : public UAnimInstance
@@ -16,18 +16,18 @@ class CONTRACT_API UAllyNPCAnimation : public UAnimInstance
 public:
 	UAllyNPCAnimation();
 
-	// ¾Ö´Ï¸ŞÀÌ¼Ç Æ½¸¶´Ù È£ÃâµÇ´Â ÇÔ¼ö
+	// ì• ë‹ˆë©”ì´ì…˜ í‹±ë§ˆë‹¤ í˜¸ì¶œë˜ëŠ” í•¨ìˆ˜
 	virtual void NativeUpdateAnimation(float DeltaSeconds) override;
 
-	// ¾Ö´Ï¸ŞÀÌ¼Ç ÃÊ±âÈ­ ÇÔ¼ö
+	// ì• ë‹ˆë©”ì´ì…˜ ì´ˆê¸°í™” í•¨ìˆ˜
 	virtual void NativeInitializeAnimation() override;
 
 protected:
-	// ¼ÒÀ¯ Ä³¸¯ÅÍÀÇ ÂüÁ¶
+	// ì†Œìœ  ìºë¦­í„°ì˜ ì°¸ì¡°
 	UPROPERTY(BlueprintReadOnly, Category = "Character")
-	class ACharacter* OwningCharacter;
+	class ACharacter* owningCharacter;
 
-	// ÀÌµ¿ °ü·Ã º¯¼ö
+	// ì´ë™ ê´€ë ¨ ë³€ìˆ˜
 	UPROPERTY(BlueprintReadOnly, Category = "Movement")
 	float Speed;
 
@@ -35,41 +35,38 @@ protected:
 	float Direction;
 
 	UPROPERTY(BlueprintReadOnly, Category = "Movement")
-	bool bIsInAir;
+	bool isInAir;
 
 	UPROPERTY(BlueprintReadOnly, Category = "Movement")
-	bool bIsCrouching;
+	bool isCrouching;
 
-	// ¹«±â °ü·Ã º¯¼ö
+	// ë¬´ê¸° ê´€ë ¨ ë³€ìˆ˜
 	UPROPERTY(BlueprintReadWrite, Category = "Weapon")
-	bool bIsAiming;
-
-	UPROPERTY(BlueprintReadWrite, Category = "Weapon")
-	bool bIsFiring;
+	bool isAiming;
 
 	UPROPERTY(BlueprintReadWrite, Category = "Weapon")
-	bool bIsReloading;
+	bool isFiring;
 
 	UPROPERTY(BlueprintReadWrite, Category = "Weapon")
-	bool bIsEquipping;
+	bool isReloading;
 
 	UPROPERTY(BlueprintReadWrite, Category = "Weapon")
-	int32 CurrentWeaponType; // 0: ¾øÀ½, 1: ±ÇÃÑ, 2: ¼ÒÃÑ, 3: ¼¦°Ç, 4: ½º³ªÀÌÆÛ
+	bool isEquipping;
 
-	// ÀüÅõ °ü·Ã º¯¼ö
+	UPROPERTY(BlueprintReadWrite, Category = "Weapon")
+	int32 currentWeaponType; // 0: ì—†ìŒ, 1: ê¶Œì´, 2: ì†Œì´, 3: ìƒ·ê±´, 4: ìŠ¤ë‚˜ì´í¼
+
+	// ì „íˆ¬ ê´€ë ¨ ë³€ìˆ˜
 	UPROPERTY(BlueprintReadWrite, Category = "Combat")
-	bool bIsInCover;
-
-	UPROPERTY(BlueprintReadWrite, Category = "Combat")
-	bool bIsHit;
+	bool isHit;
 
 	UPROPERTY(BlueprintReadWrite, Category = "Combat")
-	bool bIsDead;
+	bool isDead;
 
 	UPROPERTY(BlueprintReadWrite, Category = "Combat")
-	bool bIsThrowingGrenade;
+	bool isThrowingGrenade;
 
-	// ¸ùÅ¸ÁÖ Àç»ı ÇÔ¼öµé
+	// ëª½íƒ€ì£¼ ì¬ìƒ í•¨ìˆ˜ë“¤
 	UFUNCTION(BlueprintCallable, Category = "Combat")
 	void PlayFireMontage();
 
@@ -88,46 +85,46 @@ protected:
 	UFUNCTION(BlueprintCallable, Category = "Combat")
 	void PlayDeathMontage();
 
-	// Æ¯¼ö µ¿ÀÛ º¯¼ö
+	// íŠ¹ìˆ˜ ë™ì‘ ë³€ìˆ˜
 	UPROPERTY(BlueprintReadWrite, Category = "Animation")
-	bool bIsPeekingLeft;
+	bool isPeekingLeft;
 
 	UPROPERTY(BlueprintReadWrite, Category = "Animation")
-	bool bIsPeekingRight;
+	bool isPeekingRight;
 
 	UPROPERTY(BlueprintReadWrite, Category = "Animation")
-	float AimOffsetYaw;
+	float aimOffsetYaw;
 
 	UPROPERTY(BlueprintReadWrite, Category = "Animation")
-	float AimOffsetPitch;
+	float aimOffsetPitch;
 
 private:
-	// ¸ùÅ¸ÁÖ ·¹ÆÛ·±½º
+	// ëª½íƒ€ì£¼ ë ˆí¼ëŸ°ìŠ¤
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Animation", meta = (AllowPrivateAccess = "true"))
-	class UAnimMontage* FireMontage;
+	class UAnimMontage* fireMontage;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Animation", meta = (AllowPrivateAccess = "true"))
-	class UAnimMontage* ReloadMontage;
+	class UAnimMontage* reloadMontage;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Animation", meta = (AllowPrivateAccess = "true"))
-	class UAnimMontage* EquipMontage;
+	class UAnimMontage* equipMontage;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Animation", meta = (AllowPrivateAccess = "true"))
-	class UAnimMontage* ThrowGrenadeMontage;
+	class UAnimMontage* throwGrenadeMontage;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Animation", meta = (AllowPrivateAccess = "true"))
-	class UAnimMontage* HitReactMontage;
+	class UAnimMontage* hitReactMontage;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Animation", meta = (AllowPrivateAccess = "true"))
-	class UAnimMontage* DeathMontage;
+	class UAnimMontage* deathMontage;
 
-	// ¸ñÇ¥¹° Á¶ÁØ º¸°£ ¼Óµµ
+	// ëª©í‘œë¬¼ ì¡°ì¤€ ë³´ê°„ ì†ë„
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Animation", meta = (AllowPrivateAccess = "true"))
-	float AimInterpSpeed = 15.0f;
+	float aimInterpSpeed = 15.0f;
 
-	// IK °ü·Ã º¯¼ö
+	// IK ê´€ë ¨ ë³€ìˆ˜
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "IK", meta = (AllowPrivateAccess = "true"))
-	bool bEnableHandIK;
+	bool enableHandIK;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "IK", meta = (AllowPrivateAccess = "true"))
 	FTransform LeftHandIKTransform;
@@ -135,13 +132,13 @@ private:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "IK", meta = (AllowPrivateAccess = "true"))
 	FTransform RightHandIKTransform;
 
-	// »ç°İ È¿°úÀ½ ¹× ÀÌÆåÆ®
+	// ì‚¬ê²© íš¨ê³¼ìŒ ë° ì´í™íŠ¸
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Effects", meta = (AllowPrivateAccess = "true"))
-	class USoundBase* FireSound;
+	class USoundBase* fireSound;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Effects", meta = (AllowPrivateAccess = "true"))
 	class UNiagaraSystem* MuzzleFlash;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Effects", meta = (AllowPrivateAccess = "true"))
-	class UNiagaraSystem* EjectedShell;
+	class UNiagaraSystem* ejectedShell;
 };

@@ -13,71 +13,70 @@ UAllyNPCAnimation::UAllyNPCAnimation()
     // 초기값 설정
     Speed = 0.0f;
     Direction = 0.0f;
-    bIsInAir = false;
-    bIsCrouching = false;
+    isInAir = false;
+    isCrouching = false;
 
-    bIsAiming = false;
-    bIsFiring = false;
-    bIsReloading = false;
-    bIsEquipping = false;
-    CurrentWeaponType = 2; // 기본값으로 소총 설정
+    isAiming = false;
+    isFiring = false;
+    isReloading = false;
+    isEquipping = false;
+    currentWeaponType = 2; // 기본값으로 소총 설정
 
-    bIsInCover = false;
-    bIsHit = false;
-    bIsDead = false;
-    bIsThrowingGrenade = false;
+    isHit = false;
+    isDead = false;
+    isThrowingGrenade = false;
 
-    bIsPeekingLeft = false;
-    bIsPeekingRight = false;
-    AimOffsetYaw = 0.0f;
-    AimOffsetPitch = 0.0f;
+    isPeekingLeft = false;
+    isPeekingRight = false;
+    aimOffsetYaw = 0.0f;
+    aimOffsetPitch = 0.0f;
 
-    bEnableHandIK = true;
+    enableHandIK = true;
 }
 
 void UAllyNPCAnimation::NativeInitializeAnimation()
 {
     // 캐릭터 레퍼런스 초기화
-    OwningCharacter = Cast<ACharacter>(TryGetPawnOwner());
+    owningCharacter = Cast<ACharacter>(TryGetPawnOwner());
 }
 
 void UAllyNPCAnimation::NativeUpdateAnimation(float DeltaSeconds)
 {
     // 캐릭터 레퍼런스가 유효한지 확인
-    if (!OwningCharacter)
+    if (!owningCharacter)
     {
-        OwningCharacter = Cast<ACharacter>(TryGetPawnOwner());
-        if (!OwningCharacter)
+        owningCharacter = Cast<ACharacter>(TryGetPawnOwner());
+        if (!owningCharacter)
             return;
     }
 
     // 캐릭터 이동 컴포넌트 가져오기
-    UCharacterMovementComponent* MovementComponent = OwningCharacter->GetCharacterMovement();
-    if (!MovementComponent)
+    UCharacterMovementComponent* movementComponent = owningCharacter->GetCharacterMovement();
+    if (!movementComponent)
         return;
 
     // 속도 계산
-    FVector Velocity = OwningCharacter->GetVelocity();
-    FVector LateralVelocity = FVector(Velocity.X, Velocity.Y, 0.0f);
-    Speed = LateralVelocity.Size();
+    FVector velocity = owningCharacter->GetVelocity();
+    FVector lateralVelocity = FVector(velocity.X, velocity.Y, 0.0f);
+    Speed = lateralVelocity.Size();
 
     // 이동 방향 계산 (전후좌우)
     if (Speed > 0.0f)
     {
-        FRotator ActorRotation = OwningCharacter->GetActorRotation();
-        FVector ForwardVector = ActorRotation.Vector();
-        FVector RightVector = FRotator(0.0f, ActorRotation.Yaw, 0.0f).Vector().RightVector;
+        FRotator ActorRotation = owningCharacter->GetActorRotation();
+        FVector forwardVector = ActorRotation.Vector();
+        FVector rightVector = FRotator(0.0f, ActorRotation.Yaw, 0.0f).Vector().RightVector;
 
         // 정규화된 속도 벡터
-        FVector NormalizedVelocity = LateralVelocity.GetSafeNormal();
+        FVector normalizedVelocity = lateralVelocity.GetSafeNormal();
 
         // 전후 방향 (-1: 후방, 1: 전방)
-        float ForwardAmount = FVector::DotProduct(NormalizedVelocity, ForwardVector);
+        float forwardAmount = FVector::DotProduct(normalizedVelocity, forwardVector);
         // 좌우 방향 (-1: 왼쪽, 1: 오른쪽)
-        float RightAmount = FVector::DotProduct(NormalizedVelocity, RightVector);
+        float rightAmount = FVector::DotProduct(normalizedVelocity, rightVector);
 
         // 방향 값을 -180에서 180 사이의 각도로 변환
-        Direction = FMath::RadiansToDegrees(FMath::Atan2(RightAmount, ForwardAmount));
+        Direction = FMath::RadiansToDegrees(FMath::Atan2(rightAmount, forwardAmount));
     }
     else
     {
@@ -85,210 +84,209 @@ void UAllyNPCAnimation::NativeUpdateAnimation(float DeltaSeconds)
     }
 
     // 떠 있는지 확인
-    bIsInAir = MovementComponent->IsFalling();
+    isInAir = movementComponent->IsFalling();
 
     // 앉아 있는지 확인
-    bIsCrouching = MovementComponent->IsCrouching();
+    isCrouching = movementComponent->IsCrouching();
 
     // 조준 오프셋 업데이트 (부드러운 보간)
-    FRotator AimRotation = OwningCharacter->GetBaseAimRotation();
-    FRotator ActorRotation = OwningCharacter->GetActorRotation();
-    FRotator DeltaRotation = AimRotation - ActorRotation;
+    FRotator aimRotation = owningCharacter->GetBaseAimRotation();
+    FRotator actorRotation = owningCharacter->GetActorRotation();
+    FRotator deltaRotation = aimRotation - actorRotation;
 
     // 값을 -180에서 180 사이로 정규화
     // NormalizeAxis 대신 UKismetMathLibrary 사용
-    DeltaRotation.Yaw = UKismetMathLibrary::NormalizeAxis(DeltaRotation.Yaw);
-    DeltaRotation.Pitch = UKismetMathLibrary::NormalizeAxis(DeltaRotation.Pitch);
+    deltaRotation.Yaw = UKismetMathLibrary::NormalizeAxis(deltaRotation.Yaw);
+    deltaRotation.Pitch = UKismetMathLibrary::NormalizeAxis(deltaRotation.Pitch);
 
     // 부드럽게 보간
-    AimOffsetYaw = FMath::FInterpTo(AimOffsetYaw, DeltaRotation.Yaw, DeltaSeconds, AimInterpSpeed);
-    AimOffsetPitch = FMath::FInterpTo(AimOffsetPitch, DeltaRotation.Pitch, DeltaSeconds, AimInterpSpeed);
+    aimOffsetYaw = FMath::FInterpTo(aimOffsetYaw, deltaRotation.Yaw, DeltaSeconds, aimInterpSpeed);
+    aimOffsetPitch = FMath::FInterpTo(aimOffsetPitch, deltaRotation.Pitch, DeltaSeconds, aimInterpSpeed);
 
     // 죽은 상태일 경우 다른 모든 플래그 비활성화
-    if (bIsDead)
+    if (isDead)
     {
-        bIsAiming = false;
-        bIsFiring = false;
-        bIsReloading = false;
-        bIsEquipping = false;
-        bIsInCover = false;
-        bIsThrowingGrenade = false;
-        bIsPeekingLeft = false;
-        bIsPeekingRight = false;
+        isAiming = false;
+        isFiring = false;
+        isReloading = false;
+        isEquipping = false;
+        isThrowingGrenade = false;
+        isPeekingLeft = false;
+        isPeekingRight = false;
     }
 }
 
 void UAllyNPCAnimation::PlayFireMontage()
 {
-    if (!FireMontage || bIsReloading || bIsEquipping || bIsDead || bIsThrowingGrenade)
+    if (!fireMontage || isReloading || isEquipping || isDead || isThrowingGrenade)
         return;
 
-    bIsFiring = true;
+    isFiring = true;
 
     // 사운드 재생
-    if (FireSound)
+    if (fireSound)
     {
         UGameplayStatics::PlaySoundAtLocation(
             this,
-            FireSound,
-            OwningCharacter->GetActorLocation()
+            fireSound,
+            owningCharacter->GetActorLocation()
         );
     }
 
     // 총구 화염 이펙트 재생
-    if (MuzzleFlash && OwningCharacter)
+    if (MuzzleFlash && owningCharacter)
     {
         // 총구 소켓 위치에 이펙트 생성
-        USkeletalMeshComponent* Mesh = OwningCharacter->GetMesh();
-        if (Mesh)
+        USkeletalMeshComponent* mesh = owningCharacter->GetMesh();
+        if (mesh)
         {
-            FName MuzzleSocketName = FName("MuzzleFlashSocket");
-            if (Mesh->DoesSocketExist(MuzzleSocketName))
+            FName muzzleSocketName = FName("MuzzleFlashSocket");
+            if (mesh->DoesSocketExist(muzzleSocketName))
             {
-                FVector MuzzleLocation = Mesh->GetSocketLocation(MuzzleSocketName);
-                FRotator MuzzleRotation = Mesh->GetSocketRotation(MuzzleSocketName);
+                FVector muzzleLocation = mesh->GetSocketLocation(muzzleSocketName);
+                FRotator muzzleRotation = mesh->GetSocketRotation(muzzleSocketName);
 
                 UNiagaraFunctionLibrary::SpawnSystemAtLocation(
                     GetWorld(),
                     MuzzleFlash,
-                    MuzzleLocation,
-                    MuzzleRotation
+                    muzzleLocation,
+                    muzzleRotation
                 );
             }
         }
     }
 
     // 탄피 배출 이펙트 재생
-    if (EjectedShell && OwningCharacter)
+    if (ejectedShell && owningCharacter)
     {
         // 탄피 배출 소켓 위치에 이펙트 생성
-        USkeletalMeshComponent* Mesh = OwningCharacter->GetMesh();
-        if (Mesh)
+        USkeletalMeshComponent* mesh = owningCharacter->GetMesh();
+        if (mesh)
         {
-            FName ShellEjectSocketName = FName("ShellEjectSocket");
-            if (Mesh->DoesSocketExist(ShellEjectSocketName))
+            FName shellEjectSocketName = FName("ShellEjectSocket");
+            if (mesh->DoesSocketExist(shellEjectSocketName))
             {
-                FVector ShellLocation = Mesh->GetSocketLocation(ShellEjectSocketName);
-                FRotator ShellRotation = Mesh->GetSocketRotation(ShellEjectSocketName);
+                FVector shellLocation = mesh->GetSocketLocation(shellEjectSocketName);
+                FRotator shellRotation = mesh->GetSocketRotation(shellEjectSocketName);
 
                 UNiagaraFunctionLibrary::SpawnSystemAtLocation(
                     GetWorld(),
-                    EjectedShell,
-                    ShellLocation,
-                    ShellRotation
+                    ejectedShell,
+                    shellLocation,
+                    shellRotation
                 );
             }
         }
     }
 
     // 몽타주 재생
-    float PlayRate = 1.0f;
-    float StartingPosition = 0.0f;
-    Montage_Play(FireMontage, PlayRate, EMontagePlayReturnType::MontageLength, StartingPosition);
+    float playRate = 1.0f;
+    float startingPosition = 0.0f;
+    Montage_Play(fireMontage, playRate, EMontagePlayReturnType::MontageLength, startingPosition);
 
     // 몽타주 종료 후 자동으로 발사 상태 해제
-    FTimerHandle TimerHandle_ResetFiring;
-    GetWorld()->GetTimerManager().SetTimer(TimerHandle_ResetFiring, [this]()
+    FTimerHandle timerHandle_ResetFiring;
+    GetWorld()->GetTimerManager().SetTimer(timerHandle_ResetFiring, [this]()
         {
-            bIsFiring = false;
-        }, FireMontage->GetPlayLength() * (1.0f / PlayRate), false);
+            isFiring = false;
+        }, fireMontage->GetPlayLength() * (1.0f / playRate), false);
 }
 
 void UAllyNPCAnimation::PlayReloadMontage()
 {
-    if (!ReloadMontage || bIsReloading || bIsEquipping || bIsDead || bIsThrowingGrenade)
+    if (!reloadMontage || isReloading || isEquipping || isDead || isThrowingGrenade)
         return;
 
-    bIsReloading = true;
+    isReloading = true;
 
     // 재장전 몽타주 재생
     float PlayRate = 1.0f;
-    Montage_Play(ReloadMontage, PlayRate);
+    Montage_Play(reloadMontage, PlayRate);
 
     // 몽타주 종료 후 자동으로 재장전 상태 해제
     FTimerHandle TimerHandle_ResetReloading;
     GetWorld()->GetTimerManager().SetTimer(TimerHandle_ResetReloading, [this]()
         {
-            bIsReloading = false;
-        }, ReloadMontage->GetPlayLength() * (1.0f / PlayRate), false);
+            isReloading = false;
+        }, reloadMontage->GetPlayLength() * (1.0f / PlayRate), false);
 }
 
 void UAllyNPCAnimation::PlayEquipMontage()
 {
-    if (!EquipMontage || bIsReloading || bIsEquipping || bIsDead || bIsThrowingGrenade)
+    if (!equipMontage || isReloading || isEquipping || isDead || isThrowingGrenade)
         return;
 
-    bIsEquipping = true;
+    isEquipping = true;
 
     // 장비 장착 몽타주 재생
     float PlayRate = 1.0f;
-    Montage_Play(EquipMontage, PlayRate);
+    Montage_Play(equipMontage, PlayRate);
 
     // 몽타주 종료 후 자동으로 장착 상태 해제
     FTimerHandle TimerHandle_ResetEquipping;
     GetWorld()->GetTimerManager().SetTimer(TimerHandle_ResetEquipping, [this]()
         {
-            bIsEquipping = false;
-        }, EquipMontage->GetPlayLength() * (1.0f / PlayRate), false);
+            isEquipping = false;
+        }, equipMontage->GetPlayLength() * (1.0f / PlayRate), false);
 }
 
 void UAllyNPCAnimation::PlayThrowGrenadeMontage()
 {
-    if (!ThrowGrenadeMontage || bIsReloading || bIsEquipping || bIsDead || bIsThrowingGrenade)
+    if (!throwGrenadeMontage || isReloading || isEquipping || isDead || isThrowingGrenade)
         return;
 
-    bIsThrowingGrenade = true;
+    isThrowingGrenade = true;
 
     // 수류탄 투척 몽타주 재생
     float PlayRate = 1.0f;
-    Montage_Play(ThrowGrenadeMontage, PlayRate);
+    Montage_Play(throwGrenadeMontage, PlayRate);
 
     // 몽타주 종료 후 자동으로 투척 상태 해제
     FTimerHandle TimerHandle_ResetThrowing;
     GetWorld()->GetTimerManager().SetTimer(TimerHandle_ResetThrowing, [this]()
         {
-            bIsThrowingGrenade = false;
-        }, ThrowGrenadeMontage->GetPlayLength() * (1.0f / PlayRate), false);
+            isThrowingGrenade = false;
+        }, throwGrenadeMontage->GetPlayLength() * (1.0f / PlayRate), false);
 }
 
 void UAllyNPCAnimation::PlayHitReactMontage(FName HitDirection)
 {
-    if (!HitReactMontage || bIsDead)
+    if (!hitReactMontage || isDead)
         return;
 
-    bIsHit = true;
+    isHit = true;
 
     // 피격 몽타주 재생
-    float PlayRate = 1.0f;
-    FString SectionName = "HitDefault";
+    float playRate = 1.0f;
+    FString sectionName = "HitDefault";
 
     // 맞은 방향에 따라 다른 섹션 재생
     if (HitDirection == FName("Front"))
-        SectionName = "HitFront";
+        sectionName = "HitFront";
     else if (HitDirection == FName("Back"))
-        SectionName = "HitBack";
+        sectionName = "HitBack";
     else if (HitDirection == FName("Left"))
-        SectionName = "HitLeft";
+        sectionName = "HitLeft";
     else if (HitDirection == FName("Right"))
-        SectionName = "HitRight";
+        sectionName = "HitRight";
 
-    Montage_Play(HitReactMontage, PlayRate);
-    Montage_JumpToSection(FName(*SectionName), HitReactMontage);
+    Montage_Play(hitReactMontage, playRate);
+    Montage_JumpToSection(FName(*sectionName), hitReactMontage);
 
     // 몽타주 종료 후 자동으로 피격 상태 해제
-    FTimerHandle TimerHandle_ResetHit;
-    GetWorld()->GetTimerManager().SetTimer(TimerHandle_ResetHit, [this]()
+    FTimerHandle timerHandle_ResetHit;
+    GetWorld()->GetTimerManager().SetTimer(timerHandle_ResetHit, [this]()
         {
-            bIsHit = false;
-        }, HitReactMontage->GetPlayLength() * (1.0f / PlayRate), false);
+            isHit = false;
+        }, hitReactMontage->GetPlayLength() * (1.0f / playRate), false);
 }
 
 void UAllyNPCAnimation::PlayDeathMontage()
 {
-    if (!DeathMontage || bIsDead)
+    if (!deathMontage || isDead)
         return;
 
-    bIsDead = true;
+    isDead = true;
 
     // 사망 몽타주 재생
     float PlayRate = 1.0f;
@@ -306,14 +304,14 @@ void UAllyNPCAnimation::PlayDeathMontage()
 
     if (sectionNames.Num() > 0)
     {
-        int32 SectionIndex = FMath::RandRange(0, sectionNames.Num() - 1);
-        FName SectionName = sectionNames[SectionIndex];
+        int32 sectionIndex = FMath::RandRange(0, sectionNames.Num() - 1);
+        FName sectionName = sectionNames[sectionIndex];
 
-        Montage_Play(DeathMontage, PlayRate);
-        Montage_JumpToSection(SectionName, DeathMontage);
+        Montage_Play(deathMontage, PlayRate);
+        Montage_JumpToSection(sectionName, deathMontage);
     }
     else
     {
-        Montage_Play(DeathMontage, PlayRate);
+        Montage_Play(deathMontage, PlayRate);
     }
 }
