@@ -13,14 +13,14 @@ AAllyNPCAI::AAllyNPCAI()
 {
     PrimaryActorTick.bCanEverTick = true;
 
-    // AI 인식 컴포넌트 설정
+    // AI 인식 컴포넌트 초기화
     AIPerceptionComp = CreateDefaultSubobject<UAIPerceptionComponent>(TEXT("AIPerceptionComponent"));
 
-    // Sight 감지 설정
+    // 시각 감지 설정
     UAISenseConfig_Sight* sightConfig = CreateDefaultSubobject<UAISenseConfig_Sight>(TEXT("Sight Config"));
-    sightConfig->SightRadius = 1500.0f;
-    sightConfig->LoseSightRadius = 2000.0f;
-    sightConfig->PeripheralVisionAngleDegrees = 60.0f;
+    sightConfig->SightRadius = 1500.0f;                   // 시야 범위
+    sightConfig->LoseSightRadius = 2000.0f;               // 시야 손실 범위
+    sightConfig->PeripheralVisionAngleDegrees = 60.0f;    // 주변 시야각 (도)
     sightConfig->DetectionByAffiliation.bDetectEnemies = true;
     sightConfig->DetectionByAffiliation.bDetectFriendlies = true;
     sightConfig->DetectionByAffiliation.bDetectNeutrals = true;
@@ -36,33 +36,38 @@ AAllyNPCAI::AAllyNPCAI()
     lastPosition = FVector::ZeroVector;
     currentMovementDirection = FVector::ZeroVector;
     timeSinceLastDirectionUpdate = 0.0f;
+
+    // 속도 보간 변수 초기화 (부드러운 속도 변화를 위함)
+    currentSpeed = 0.0f;
+    targetSpeed = 0.0f; 
+    speedInterpRate = 2.0f;  // 낮은 값으로 설정하여 부드러운 가속/감속
 }
 
 void AAllyNPCAI::BeginPlay()
 {
     Super::BeginPlay();
 
-    // 플레이어 캐릭터 찾기
+    // 플레이어 캐릭터 참조 가져오기
     playerPawn = GetPlayerPawn();
 
+    // 디버그 검사: 플레이어 캐릭터 존재 여부
     if (playerPawn == nullptr)
     {
         GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("플레이어 캐릭터를 찾을 수 없습니다!"));
-
         return;
     }
 
+    // 디버그 검사: NPC 존재 여부
     if (controlledAllyNPC == nullptr)
     {
         GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("제어할 Ally NPC가 없습니다!"));
-
         return;
     }
 
-    // 초기 위치 설정
+    // 초기 위치 저장
     lastPosition = controlledAllyNPC->GetActorLocation();
 
-    // Perception 업데이트 콜백 등록
+    // 인식 이벤트 콜백 등록
     AIPerceptionComp->OnTargetPerceptionUpdated.AddDynamic(this, &AAllyNPCAI::OnPerceptionUpdated);
 }
 
@@ -70,30 +75,43 @@ void AAllyNPCAI::Tick(float deltaTime)
 {
     Super::Tick(deltaTime);
 
-    // 이동 방향 업데이트
-    UpdateMovementDirection(deltaTime);
-
-    // 이동 상태 업데이트
-    UpdateMovementState(deltaTime);
-
-    // 전투 상태 업데이트
-    UpdateCombatState(deltaTime);
+    // 매 프레임 상태 업데이트
+    UpdateMovementDirection(deltaTime);  // 이동 방향 업데이트
+    UpdateMovementState(deltaTime);      // 이동 상태 업데이트
+    UpdateCombatState(deltaTime);        // 전투 상태 업데이트
 }
 
 void AAllyNPCAI::OnPossess(APawn* inPawn)
 {
     Super::OnPossess(inPawn);
 
+    // 제어할 NPC 참조 가져오기
     controlledAllyNPC = Cast<AAllyNPC>(inPawn);
 
-    // 플레이어 즉시 찾기
+    // 플레이어 참조 가져오기
     playerPawn = GetPlayerPawn();
 
-    // 초기 위치 설정
+    // NPC 초기화
     if (controlledAllyNPC)
+    {
         lastPosition = controlledAllyNPC->GetActorLocation();
+        
+        // 경로 이동 설정
+        if (GetPathFollowingComponent())
+        {
+            // 목적지 도달 범위 설정
+            GetPathFollowingComponent()->SetAcceptanceRadius(100.0f);
+        }
+        
+        // 부드러운 이동을 위한 캐릭터 이동 컴포넌트 설정
+        if (controlledAllyNPC->GetCharacterMovement())
+        {
+            UCharacterMovementComponent* movementComp = controlledAllyNPC->GetCharacterMovement();
+            movementComp->bRequestedMoveUseAcceleration = true;
+        }
+    }
 
-    // AI 컨트롤러 초기화  
+    // 비헤이비어 트리 초기화
     if (BehaviorTree && blackboardData)
     {
         UBlackboardComponent* blackboardComp = GetBlackboardComponent();
@@ -105,14 +123,13 @@ void AAllyNPCAI::OnPossess(APawn* inPawn)
         }
     }
 
-    // 즉시 플레이어 따라가기 시작
+    // 플레이어 추적 시작
     MoveToPlayer();
 }
 
 void AAllyNPCAI::OnUnPossess()
 {
     Super::OnUnPossess();
-
     controlledAllyNPC = nullptr;
 }
 
@@ -123,28 +140,25 @@ void AAllyNPCAI::MoveToPlayer()
         return;
     }
 
-    // 이 함수는 이제 UpdateMovementState에서 처리하므로 간단히 유지
+    // UpdateMovementState에서 실제 이동 처리
     GEngine->AddOnScreenDebugMessage(-1, 0.1f, FColor::Blue, TEXT("MoveToPlayer 호출됨"));
 }
 
 void AAllyNPCAI::StartFiring()
 {
     isFiring = true;
-
     controlledAllyNPC->StartFiring();
 }
 
 void AAllyNPCAI::StopFiring()
 {
     isFiring = false;
-
     controlledAllyNPC->StopFiring();
 }
 
 void AAllyNPCAI::OnPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus)
 {
-    // AI 인식에 따른 처리 (예: 적 발견)
-    // 현재 구현에서는 플레이어 지원 역할이므로 적 인식 로직은 제외
+    // AI 인식 처리 (현재는 플레이어 지원 역할로 미구현)
 }
 
 APawn* AAllyNPCAI::GetPlayerPawn()
@@ -154,21 +168,21 @@ APawn* AAllyNPCAI::GetPlayerPawn()
 
 void AAllyNPCAI::UpdateCombatState(float DeltaTime)
 {
+    // 발사 결정 타이머 업데이트
     timeSinceLastShotDecision += DeltaTime;
 
-    // 결정 주기가 지나지 않았으면 리턴
+    // 결정 주기 대기
     if (timeSinceLastShotDecision < decisionUpdateInterval)
         return;
 
     timeSinceLastShotDecision = 0.0f;
 
-    // 발사 조건 확인 및 결정
+    // 발사 범위 내에 있으면 발사, 아니면 발사 중지
     if (IsInFireRange())
     {
         if (!isFiring)
             StartFiring();
     }
-
     else
     {
         if (isFiring)
@@ -184,40 +198,53 @@ void AAllyNPCAI::UpdateMovementState(float DeltaTime)
         return;
     }
 
+    // 플레이어와의 거리 계산
     const float distanceToPlayer = FVector::Dist(controlledAllyNPC->GetActorLocation(), playerPawn->GetActorLocation());
     
-    // 디버그 로그
-    GEngine->AddOnScreenDebugMessage
-    (
+    // 디버그 정보 표시
+    GEngine->AddOnScreenDebugMessage(
         -1, 0.1f, FColor::Yellow, 
         FString::Printf(TEXT("플레이어와의 거리: %.2f / 팔로우 거리: %.2f"), distanceToPlayer, followDistance)
     );
 
-    // 수정된 조건: 거리가 followDistance보다 클 때 플레이어를 따라가야 함
-    if (distanceToPlayer > followDistance)
+    // 히스테리시스를 적용한 이동 상태 결정
+    if (distanceToPlayer > followDistance * 1.1f)  // 이동 시작 임계값
     {
-        // AI를 통한 이동 - MoveToLocation 사용
+        // 거리에 따른 이동 속도 결정 (달리기 또는 걷기)
         bool isRunning = distanceToPlayer > followDistance * 1.5f;
+        targetSpeed = isRunning ? controlledAllyNPC->runSpeed : controlledAllyNPC->walkSpeed;
         
-        // 이동 속도 설정
-        if (controlledAllyNPC->GetCharacterMovement())
-        {
-            controlledAllyNPC->GetCharacterMovement()->MaxWalkSpeed = isRunning ? controlledAllyNPC->runSpeed : controlledAllyNPC->walkSpeed;
-        }
-        
-        // 플레이어 위치로 이동 (회전 제어는 비활성화)
+        // 플레이어 위치로 이동 요청 설정
         FVector playerLocation = playerPawn->GetActorLocation();
-        auto result = MoveToLocation(playerLocation, followDistance * 0.8f, true, true, false, false);
+        FAIMoveRequest MoveRequest;
+        MoveRequest.SetGoalLocation(playerLocation);
+        MoveRequest.SetAcceptanceRadius(followDistance * 0.8f);
+        MoveRequest.SetUsePathfinding(true);
+        MoveRequest.SetAllowPartialPath(true);
+        MoveRequest.SetProjectGoalLocation(false);
+        MoveRequest.SetNavigationFilter(GetDefaultNavigationFilterClass());
         
-        // 애니메이션을 위한 이동 벡터 업데이트 (현재 이동 방향 사용)
+        // 이동 요청 실행
+        FPathFollowingRequestResult result = MoveTo(MoveRequest);
+        
+        // 애니메이션 상태 업데이트
         controlledAllyNPC->UpdateMovementState(isRunning, currentMovementDirection);
-    }  
-
-    else
+    }
+    else if (distanceToPlayer < followDistance * 0.9f)  // 정지 임계값
     {
-        // 가까이 있을 때는 이동 중지
+        // 충분히 가까우면 정지
+        targetSpeed = 0.0f;
         StopMovement();
         controlledAllyNPC->UpdateMovementState(false, FVector::ZeroVector);
+    }
+    
+    // 부드러운 속도 전환을 위한 보간 적용
+    currentSpeed = FMath::FInterpTo(currentSpeed, targetSpeed, DeltaTime, speedInterpRate);
+    
+    // 계산된 속도 적용
+    if (controlledAllyNPC->GetCharacterMovement())
+    {
+        controlledAllyNPC->GetCharacterMovement()->MaxWalkSpeed = currentSpeed;
     }
 }
 
@@ -226,47 +253,45 @@ void AAllyNPCAI::UpdateMovementDirection(float DeltaTime)
     if (!controlledAllyNPC)
         return;
 
+    // 방향 업데이트 타이머 증가
     timeSinceLastDirectionUpdate += DeltaTime;
 
-    // 짧은 간격으로 이동 방향 업데이트
+    // 지정된 간격으로 방향 업데이트
     if (timeSinceLastDirectionUpdate >= movementDirectionUpdateInterval)
     {
         FVector currentPosition = controlledAllyNPC->GetActorLocation();
-        
-        // 이동 거리 계산
         FVector movementDelta = currentPosition - lastPosition;
         float movementDistance = movementDelta.Size();
         
-        // 최소 이동 거리 이상일 때만 방향 업데이트 (노이즈 방지)
+        // 의미 있는 이동이 있을 경우만 방향 업데이트
         if (movementDistance > 0.01f)
         {
+            // 이동 방향 정규화
             currentMovementDirection = movementDelta.GetSafeNormal();
             
-            // NPC를 이동 방향으로 회전시키기 (보간 적용)
+            // 이동 방향으로 NPC 회전
             if (!currentMovementDirection.IsNearlyZero())
             {
-                // 이동 방향을 회전값으로 변환
+                // 이동 방향을 회전으로 변환
                 FRotator targetRotation = currentMovementDirection.Rotation();
+                targetRotation.Pitch = 0.0f;  // 수평 유지
+                targetRotation.Roll = 0.0f;   // 수평 유지
                 
-                // 피치와 롤은 0으로 설정하여 수평 유지
-                targetRotation.Pitch = 0.0f;
-                targetRotation.Roll = 0.0f;
-                
-                // 현재 회전값
+                // 현재 회전 가져오기
                 FRotator currentRotation = controlledAllyNPC->GetActorRotation();
                 
-                // 보간된 회전값 계산 (부드러운 회전)
+                // 부드러운 회전을 위한 보간 적용
                 FRotator interpolatedRotation = FMath::RInterpTo(
-                    currentRotation,       // 현재 회전
-                    targetRotation,        // 목표 회전
-                    DeltaTime,             // 델타 시간
-                    rotationInterpSpeed    // 보간 속도
+                    currentRotation,
+                    targetRotation,
+                    DeltaTime,
+                    rotationInterpSpeed
                 );
                 
                 // 보간된 회전 적용
                 controlledAllyNPC->SetActorRotation(interpolatedRotation);
                 
-                // 디버그 정보
+                // 디버그 정보 표시
                 GEngine->AddOnScreenDebugMessage(
                     -1, 0.1f, FColor::Green,
                     FString::Printf(TEXT("보간 회전: Yaw=%.2f, 목표=%.2f, 이동 방향: X=%.2f, Y=%.2f"),
@@ -276,7 +301,7 @@ void AAllyNPCAI::UpdateMovementDirection(float DeltaTime)
             }
         }
         
-        // 위치 및 타이머 업데이트
+        // 현재 위치 저장 및 타이머 초기화
         lastPosition = currentPosition;
         timeSinceLastDirectionUpdate = 0.0f;
     }
@@ -284,8 +309,7 @@ void AAllyNPCAI::UpdateMovementDirection(float DeltaTime)
 
 bool AAllyNPCAI::IsInFireRange() const
 {
-    // 플레이어와의 거리가 적절한지 확인 (여기서는 1000유닛 이내)
+    // 플레이어와의 거리가 발사 범위(1000유닛) 내인지 확인
     const float DistanceToPlayer = FVector::Dist(controlledAllyNPC->GetActorLocation(), playerPawn->GetActorLocation());
-
     return DistanceToPlayer < 1000.0f;
 }

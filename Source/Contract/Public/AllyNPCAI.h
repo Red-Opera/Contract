@@ -11,83 +11,91 @@
 
 class AAllyNPC;
 
+/**
+ * AAllyNPCAI - 동맹 NPC 캐릭터를 제어하는 AI 컨트롤러 클래스
+ * 플레이어를 따라다니며 전투 지원을 제공하는 AI 로직 구현
+ */
 UCLASS()
 class CONTRACT_API AAllyNPCAI : public ADetourCrowdAIController
 {
 	GENERATED_BODY()
 
 public:
+	// 생성자 및 기본 오버라이드 함수
 	AAllyNPCAI();
-
 	virtual void OnPossess(APawn* InPawn) override;
 	virtual void OnUnPossess() override;
 
-	// AI 관련 컴포넌트
+	// AI 인식 시스템
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AI")
 	UAIPerceptionComponent* AIPerceptionComp;
 
-	// 행동 트리 및 블랙보드
+	// AI 행동 결정 시스템
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "AI")
 	UBehaviorTree* BehaviorTree;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "AI")
 	UBlackboardData* blackboardData;
 
-	// AI 이동 및 전투 파라미터
+	// AI 이동 파라미터
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "AI")
-	float followDistance = 500.0f;
+	float followDistance = 500.0f;  // 플레이어로부터 유지할 거리
 
-	// 플레이어 추적 관련 함수
+	// 플레이어 추적 기능
 	UFUNCTION(BlueprintCallable, Category = "AI")
-	void MoveToPlayer();
+	void MoveToPlayer();  // 플레이어 위치로 이동 시작
+
+	// 전투 관련 함수
+	UFUNCTION(BlueprintCallable, Category = "Combat")
+	void StartFiring();  // 발사 시작
 
 	UFUNCTION(BlueprintCallable, Category = "Combat")
-	void StartFiring();
+	void StopFiring();   // 발사 중지
 
-	UFUNCTION(BlueprintCallable, Category = "Combat")
-	void StopFiring();
-
-	// 적 감지 이벤트
+	// 인식 시스템 이벤트 핸들러
 	UFUNCTION()
 	void OnPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus);
 
 protected:
+	// 기본 라이프사이클 함수
 	virtual void BeginPlay() override;
 	virtual void Tick(float deltaTime) override;
 
 private:
-	// AI가 제어하는 AllyNPC 캐릭터에 대한 참조
+	// 캐릭터 참조
 	UPROPERTY()
-	AAllyNPC* controlledAllyNPC;
+	AAllyNPC* controlledAllyNPC;  // 현재 제어 중인 NPC
 
 	UPROPERTY()
-	APawn* playerPawn;
+	APawn* playerPawn;  // 플레이어 캐릭터 참조
 
-	bool isFiring;
-	float timeSinceLastShotDecision;
-	float decisionUpdateInterval = 0.5f;
+	// 전투 관련 변수
+	bool isFiring;                         // 현재 발사 중인지 여부
+	float timeSinceLastShotDecision;       // 마지막 발사 결정 이후 경과 시간
+	float decisionUpdateInterval = 0.5f;   // 발사 결정 업데이트 간격
 
-	// 이동 방향 추적을 위한 변수
-	FVector lastPosition;
-	FVector currentMovementDirection;
-	float movementDirectionUpdateInterval = 0.01f;
-	float timeSinceLastDirectionUpdate;
+	// 이동 방향 계산 변수
+	FVector lastPosition;                          // 이전 위치
+	FVector currentMovementDirection;              // 현재 이동 방향
+	float movementDirectionUpdateInterval = 0.01f; // 방향 업데이트 간격
+	float timeSinceLastDirectionUpdate;            // 마지막 방향 업데이트 이후 경과 시간
 
-	// 플레이어 찾기
-	APawn* GetPlayerPawn();
+	// 헬퍼 함수
+	APawn* GetPlayerPawn();  // 플레이어 폰 참조 가져오기
 
-	// 전투 상태 업데이트
-	void UpdateCombatState(float DeltaTime);
+	// 상태 업데이트 함수
+	void UpdateCombatState(float DeltaTime);       // 전투 로직 업데이트
+	void UpdateMovementState(float DeltaTime);     // 이동 로직 업데이트
+	void UpdateMovementDirection(float DeltaTime); // 이동 방향 업데이트
 
-	// 이동 상태 업데이트
-	void UpdateMovementState(float DeltaTime);
+	// 전투 유틸리티 함수
+	bool IsInFireRange() const;  // 발사 가능 거리 확인
 
-	// 이동 방향 업데이트
-	void UpdateMovementDirection(float DeltaTime);
+	// 이동 및 회전 파라미터
+	float rotationInterpSpeed = 5.0f;  // 회전 보간 속도 (높을수록 빠르게 회전)
 
-	// 적절한 발사 거리인지 확인
-	bool IsInFireRange() const;
-
-	// 회전 보간 속도 (값이 클수록 더 빠르게 회전)
-	float rotationInterpSpeed = 5.0f;
+	// 부드러운 이동을 위한 속도 보간 변수
+	float currentSpeed;   // 현재 적용된 이동 속도
+	float targetSpeed;    // 목표 이동 속도
+	float speedInterpRate;  // 속도 보간
 };
