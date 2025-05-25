@@ -5,6 +5,8 @@
 #include "Perception/AIPerceptionComponent.h"
 #include "BehaviorTree/BehaviorTree.h"
 #include "BehaviorTree/BlackboardData.h"
+#include "Navigation/PathFollowingComponent.h"
+#include "AIController.h"
 #include "AllyNPCAI.generated.h"
 
 class AAllyNPC;
@@ -29,7 +31,7 @@ public:
 	UBehaviorTree* BehaviorTree;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "AI")
-	UBlackboardData* BlackboardData;
+	UBlackboardData* blackboardData;
 
 	// AI 이동 및 전투 파라미터
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "AI")
@@ -65,11 +67,11 @@ private:
 	float timeSinceLastShotDecision;
 	float decisionUpdateInterval = 0.5f;
 
-	// 회전 관련 변수 추가
-	FRotator targetRotation;
-	float rotationSpeed = 120.0f; // 초당 회전 속도 (도)
-	bool isRotating = false;
-	float rotationTolerance = 5.0f; // 회전 완료 허용 오차
+	// 이동 방향 추적을 위한 변수
+	FVector lastPosition;
+	FVector currentMovementDirection;
+	float movementDirectionUpdateInterval = 0.01f;
+	float timeSinceLastDirectionUpdate;
 
 	// 플레이어 찾기
 	APawn* GetPlayerPawn();
@@ -80,12 +82,12 @@ private:
 	// 이동 상태 업데이트
 	void UpdateMovementState(float DeltaTime);
 
-	// 회전 상태 업데이트 추가
-	void UpdateRotationState(float DeltaTime);
-
-	// 목표 회전값 설정
-	void SetTargetRotation(const FRotator& NewTargetRotation);
+	// 이동 방향 업데이트
+	void UpdateMovementDirection(float DeltaTime);
 
 	// 적절한 발사 거리인지 확인
 	bool IsInFireRange() const;
+
+	// 회전 보간 속도 (값이 클수록 더 빠르게 회전)
+	float rotationInterpSpeed = 5.0f;
 };

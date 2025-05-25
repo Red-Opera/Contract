@@ -18,10 +18,18 @@ AAllyNPC::AAllyNPC()
 	weaponMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("WeaponMesh"));
 	weaponMesh->SetupAttachment(GetMesh());
 
-	// 이동 설정 - 회전을 AI가 직접 제어하도록 수정
-	GetCharacterMovement()->bUseControllerDesiredRotation = false; // AI가 직접 회전 제어
-	GetCharacterMovement()->bOrientRotationToMovement = false; // 이동 방향으로 자동 회전 비활성화
+	// 이동 설정 - 이동 방향으로만 회전하도록 설정
+	GetCharacterMovement()->bUseControllerDesiredRotation = false; // AI 컨트롤러 회전 비활성화
+	GetCharacterMovement()->bOrientRotationToMovement = true; // 이동 방향으로 자동 회전 활성화
 	GetCharacterMovement()->MaxWalkSpeed = walkSpeed;
+	
+	// 자연스러운 회전을 위한 설정
+	GetCharacterMovement()->RotationRate = FRotator(0.0f, 270.0f, 0.0f); // 빠른 회전 속도
+	
+	// Pawn이 컨트롤러 회전을 사용하지 않도록 설정
+	bUseControllerRotationYaw = false;
+	bUseControllerRotationPitch = false;
+	bUseControllerRotationRoll = false;
 
 	// 전투 변수 초기화
 	isFiring = false;
@@ -63,11 +71,11 @@ void AAllyNPC::SetupPlayerInputComponent(UInputComponent* playerInputComponent)
 
 void AAllyNPC::UpdateMovementState(bool isRunning, const FVector& direction)
 {
-	FVector localDirection = GetActorTransform().InverseTransformVectorNoScale(direction);
-	UpdateMovementVector(localDirection, isRunning);
-
-	// 이동 속도 설정
-	GetCharacterMovement()->MaxWalkSpeed = isRunning ? runSpeed : walkSpeed;
+	// 이동 벡터를 애니메이션 시스템을 위해 업데이트
+	UpdateMovementVector(direction, isRunning);
+	
+	// 실제 이동은 AI 컨트롤러의 MoveTo에 의해 처리됨
+	// 여기서는 애니메이션 파라미터만 설정
 }
 
 void AAllyNPC::UpdateMovementVector(const FVector& direction, bool isRunning)
