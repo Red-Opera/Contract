@@ -40,22 +40,35 @@ void UAllyNPCAnimation::NativeInitializeAnimation()
 {
     // 캐릭터 레퍼런스 초기화
     owningCharacter = Cast<ACharacter>(TryGetPawnOwner());
+    
+    // 소유 캐릭터 확인 로직 추가
+    if (!owningCharacter)
+        GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Red, TEXT("애니메이션의 소유 캐릭터가 존재하지 않습니다!"));
+
+    else
+    {
+        GEngine->AddOnScreenDebugMessage
+        (
+            -1, 5.0f, FColor::Green, 
+            FString::Printf(TEXT("애니메이션 소유 캐릭터: %s"), *owningCharacter->GetName())
+        );
+            
+        // 캐릭터가 초기화된 후 딜레이를 두고 한번 더 확인
+        FTimerHandle TimerHandle;
+        GetWorld()->GetTimerManager().SetTimer(TimerHandle, [this]()
+        {
+            if (!owningCharacter)
+            {
+                UE_LOG(LogTemp, Error, TEXT("UAllyNPCAnimation: 타이머 후에도 캐릭터가 null입니다."));
+            }
+        }, 0.5f, false);
+    }
 }
 
 void UAllyNPCAnimation::NativeUpdateAnimation(float DeltaSeconds)
 {
-    // 캐릭터 레퍼런스가 유효한지 확인
     if (owningCharacter == nullptr)
-    {
-        owningCharacter = Cast<ACharacter>(TryGetPawnOwner());
-
-        if (owningCharacter == nullptr)
-        {
-			GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Red, TEXT("UAllyNPCAnimation: Owning character is null!"));
-
-            return;
-        }
-    }
+        return;
 
     // 캐릭터 이동 컴포넌트 가져오기
     UCharacterMovementComponent* movementComponent = owningCharacter->GetCharacterMovement();
@@ -131,6 +144,9 @@ void UAllyNPCAnimation::NativeUpdateAnimation(float DeltaSeconds)
         isPeekingLeft = false;
         isPeekingRight = false;
     }
+
+    // 왼손 IK 위치를 게임 스레드에서 미리 계산하여 캐시
+    UpdateLeftHandIKCache();
 }
 
 void UAllyNPCAnimation::PlayFireMontage()
@@ -342,15 +358,18 @@ FTransform UAllyNPCAnimation::GetRightHandIKTransform() const
     // 소유 캐릭터가 유효한지 확인
     if (!owningCharacter)
     {
-        UE_LOG(LogTemp, Warning, TEXT("UAllyNPCAnimation::GetRightHandIKTransform - owningCharacter가 null"));
+		GEngine->AddOnScreenDebugMessage(-1, 1.0f, FColor::Red, TEXT("캐릭터가 존재하지 않음"));
+
         return FTransform::Identity;
     }
 
     // AllyNPC로 캐스트
     AAllyNPC* allyNPC = Cast<AAllyNPC>(owningCharacter);
+
     if (!allyNPC)
     {
-        UE_LOG(LogTemp, Warning, TEXT("UAllyNPCAnimation::GetRightHandIKTransform - AllyNPC로 캐스트 실패"));
+		GEngine->AddOnScreenDebugMessage(-1, 1.0f, FColor::Red, TEXT("애니메이션: AllyNPC 캐스트 실패"));
+
         return FTransform::Identity;
     }
 
@@ -358,23 +377,52 @@ FTransform UAllyNPCAnimation::GetRightHandIKTransform() const
     return allyNPC->GetRightHandIKTransform();
 }
 
+void UAllyNPCAnimation::UpdateLeftHandIKCache()
+{
+    // 초기화
+    isLeftHandIKValid = false;
+    cachedLeftHandIKTransform = FTransform::Identity;
+    LeftHandIKLocation = FVector::ZeroVector;
+    LeftHandIKRotation = FRotator::ZeroRotator;
+
+    // 소유 캐릭터가 유효한지 확인
+    if (!IsValid(owningCharacter))
+    {
+        return;
+    }
+
+    AAllyNPC* allyNPC = Cast<AAllyNPC>(owningCharacter);
+    if (!IsValid(allyNPC))
+    {
+        return;
+    }
+    
+    // Gun이 장착되어 있고 유효한지 확인
+    if (IsValid(allyNPC->equippedGun))
+    {
+        AGun* gun = allyNPC->equippedGun;
+        
+        // Gun의 메시가 유효한지 확인
+        if (IsValid(gun->mesh))
+        {
+            // 소켓 존재 여부 확인
+            if (gun->mesh->DoesSocketExist(gun->leftHandGripSocketName))
+            {
+                // 안전하게 소켓 트랜스폼 가져오기
+                cachedLeftHandIKTransform = gun->mesh->GetSocketTransform(gun->leftHandGripSocketName, RTS_World);
+                
+                // 캐시된 값들 업데이트
+                LeftHandIKLocation = cachedLeftHandIKTransform.GetLocation();
+                LeftHandIKRotation = cachedLeftHandIKTransform.GetRotation().Rotator();
+                isLeftHandIKValid = true;
+            }
+        }
+    }
+}
+
+// 스레드 안전한 함수로 완전히 수정
 FTransform UAllyNPCAnimation::GetLeftHandIKTransform() const
 {
-    // 소유 캐릭터가 유효한지 확인
-    if (!owningCharacter)
-    {
-        UE_LOG(LogTemp, Warning, TEXT("UAllyNPCAnimation::GetLeftHandIKTransform - owningCharacter가 null"));
-        return FTransform::Identity;
-    }
-
-    // AllyNPC로 캐스트
-    AAllyNPC* allyNPC = Cast<AAllyNPC>(owningCharacter);
-    if (!allyNPC)
-    {
-        UE_LOG(LogTemp, Warning, TEXT("UAllyNPCAnimation::GetLeftHandIKTransform - AllyNPC로 캐스트 실패"));
-        return FTransform::Identity;
-    }
-
-    // AllyNPC에서 왼손 IK 트랜스폼 가져오기
-    return allyNPC->GetLeftHandIKTransform();
+    // 캐시된 값만 반환 (스레드 안전)
+    return cachedLeftHandIKTransform;
 }

@@ -23,7 +23,6 @@ AGun::AGun()
 	muzzle->SetRelativeRotation(FRotator(0.0f, -90.0f, 0.0f));
 }
 
-// Called when the game starts or when spawned
 void AGun::BeginPlay()
 {
 	Super::BeginPlay();
@@ -173,14 +172,22 @@ FTransform AGun::GetRightHandGripTransform() const
     // 오른손 파지 소켓이 존재하는지 확인
     if (!mesh->DoesSocketExist(rightHandGripSocketName))
     {
-        UE_LOG(LogTemp, Warning, TEXT("AGun::GetRightHandGripTransform - 소켓 '%s'을 찾을 수 없습니다. 기본 위치를 사용합니다."), *rightHandGripSocketName.ToString());
+        UE_LOG(LogTemp, Warning, TEXT("AGun::GetRightHandGripTransform - 소켓 '%s'을 찾을 수 없습니다."), *rightHandGripSocketName.ToString());
         
-        // 소켓이 없는 경우 Gun의 손잡이 부분으로 기본 위치 계산 (오른손용)
+        // NPC에 장착된 경우: Gun의 월드 트랜스폼 기준으로 오른손 위치 계산
+        if (bIsEquippedByNPC)
+        {
+            FVector gunLocation = GetActorLocation();
+            FRotator gunRotation = GetActorRotation();
+            
+            // Gun이 이미 오른손에 부착되어 있으므로, Gun의 현재 위치가 오른손 파지 위치
+            return FTransform(gunRotation, gunLocation, FVector::OneVector);
+        }
+        
+        // 플레이어용 기본 위치
         FVector gunLocation = GetActorLocation();
         FRotator gunRotation = GetActorRotation();
-        
-        // Gun의 손잡이 부분 (오른손이 잡을 위치)
-        FVector rightHandOffset = FVector(-5.0f, -5.0f, 0.0f); // 뒤쪽 5cm, 왼쪽 5cm (오른손 기준)
+        FVector rightHandOffset = FVector(-5.0f, -5.0f, 0.0f);
         FVector rightHandLocation = gunLocation + gunRotation.RotateVector(rightHandOffset);
         
         return FTransform(gunRotation, rightHandLocation, FVector::OneVector);
@@ -203,14 +210,18 @@ FTransform AGun::GetLeftHandGripTransform() const
     // 왼손 보조 파지 소켓이 존재하는지 확인
     if (!mesh->DoesSocketExist(leftHandGripSocketName))
     {
-        UE_LOG(LogTemp, Warning, TEXT("AGun::GetLeftHandGripTransform - 소켓 '%s'을 찾을 수 없습니다. 기본 위치를 사용합니다."), *leftHandGripSocketName.ToString());
+        UE_LOG(LogTemp, Warning, TEXT("AGun::GetLeftHandGripTransform - 소켓 '%s'을 찾을 수 없습니다. Gun 메시에 소켓을 추가해주세요."), *leftHandGripSocketName.ToString());
         
-        // 소켓이 없는 경우 Gun의 전방 부분으로 기본 위치 계산 (왼손용)
+        // 디버그 메시지 추가
+        GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Red, 
+            FString::Printf(TEXT("Gun에 '%s' 소켓이 없습니다!"), *leftHandGripSocketName.ToString()));
+        
+        // 소켓이 없는 경우 Gun 기준으로 왼손 위치 추정
         FVector gunLocation = GetActorLocation();
         FRotator gunRotation = GetActorRotation();
         
-        // Gun의 전방 부분 (왼손이 잡을 위치)
-        FVector leftHandOffset = FVector(15.0f, -3.0f, 0.0f); // 앞쪽 15cm, 약간 왼쪽 3cm
+        // Gun의 전방 부분에 왼손 위치 계산 (총신 중간 부분)
+        FVector leftHandOffset = FVector(0.0f, 0.0f, 0.0f); // Gun 로컬 좌표계에서 앞쪽 15cm
         FVector leftHandLocation = gunLocation + gunRotation.RotateVector(leftHandOffset);
         
         return FTransform(gunRotation, leftHandLocation, FVector::OneVector);
@@ -218,6 +229,48 @@ FTransform AGun::GetLeftHandGripTransform() const
 
     // 소켓이 존재하는 경우 소켓의 월드 트랜스폼 반환
     FTransform socketTransform = mesh->GetSocketTransform(leftHandGripSocketName, RTS_World);
+    
+    GEngine->AddOnScreenDebugMessage(-1, 0.1f, FColor::Green, 
+        FString::Printf(TEXT("왼손 소켓 위치: %s"), *socketTransform.GetLocation().ToString()));
+    
+    return socketTransform;
+}
+
+FTransform AGun::GetLeftHandIKTransform() const
+{
+    // Gun 메시가 유효한지 확인
+    if (!mesh)
+    {
+        UE_LOG(LogTemp, Warning, TEXT("AGun::GetLeftHandIKTransform - Gun 메시가 없습니다."));
+        return FTransform::Identity;
+    }
+
+    // 왼손 보조 파지 소켓이 존재하는지 확인
+    if (!mesh->DoesSocketExist(leftHandGripSocketName))
+    {
+        UE_LOG(LogTemp, Warning, TEXT("AGun::GetLeftHandIKTransform - 소켓 '%s'을 찾을 수 없습니다. Gun 메시에 소켓을 추가해주세요."), *leftHandGripSocketName.ToString());
+        
+        // 디버그 메시지 추가
+        GEngine->AddOnScreenDebugMessage(-1, 1.0f, FColor::Red, 
+            FString::Printf(TEXT("Gun에 '%s' 소켓이 없습니다!"), *leftHandGripSocketName.ToString()));
+        
+        // 소켓이 없는 경우 Gun 기준으로 왼손 위치 추정
+        FVector gunLocation = GetActorLocation();
+        FRotator gunRotation = GetActorRotation();
+        
+        // Gun의 전방 부분에 왼손 위치 계산 (총신 중간 부분)
+        FVector leftHandOffset = FVector(15.0f, 0.0f, 0.0f); // Gun 로컬 좌표계에서 앞쪽 15cm
+        FVector leftHandLocation = gunLocation + gunRotation.RotateVector(leftHandOffset);
+        
+        return FTransform(gunRotation, leftHandLocation, FVector::OneVector);
+    }
+
+    // 소켓이 존재하는 경우 소켓의 월드 트랜스폼 반환
+    FTransform socketTransform = mesh->GetSocketTransform(leftHandGripSocketName, RTS_World);
+    
+    GEngine->AddOnScreenDebugMessage(-1, 0.1f, FColor::Green, 
+        FString::Printf(TEXT("왼손 소켓 위치: %s"), *socketTransform.GetLocation().ToString()));
+    
     return socketTransform;
 }
 

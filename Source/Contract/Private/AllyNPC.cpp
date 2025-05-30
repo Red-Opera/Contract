@@ -17,10 +17,10 @@ AAllyNPC::AAllyNPC()
 	// Gun 시스템 초기화
 	equippedGun = nullptr;
 
-	// Gun 부착 오프셋 초기화 (필요에 따라 조정)
+	// Gun 부착 오프셋 초기화 - 더 정확한 파지를 위한 조정
 	gunAttachOffset = FTransform(
-		FRotator(0.0f, 0.0f, 0.0f),     // 회전
-		FVector(0.0f, 0.0f, 0.0f),      // 위치
+		FRotator(0.0f, 90.0f, 0.0f),    // Y축으로 90도 회전 (Gun이 앞을 향하도록)
+		FVector(2.0f, 0.0f, 0.0f),      // 약간 앞으로 이동
 		FVector(1.0f, 1.0f, 1.0f)       // 스케일
 	);
 
@@ -99,12 +99,11 @@ void AAllyNPC::EquipGun()
     // Gun 블루프린트가 설정되어 있는지 확인
     if (!gunBlueprint)
     {
-        UE_LOG(LogTemp, Error, TEXT("AAllyNPC::EquipGun - Gun 블루프린트가 설정되지 않았습니다! 블루프린트에서 'Gun Blueprint' 변수를 설정해주세요."));
         GEngine->AddOnScreenDebugMessage(-1, 10.0f, FColor::Red, TEXT("Gun 블루프린트가 설정되지 않음! 블루프린트에서 설정 필요!"));
+
         return;
     }
     
-    UE_LOG(LogTemp, Log, TEXT("AAllyNPC::EquipGun - Gun 블루프린트: %s"), *gunBlueprint->GetName());
     GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Blue, FString::Printf(TEXT("Gun 블루프린트: %s"), *gunBlueprint->GetName()));
 
 	// 기존 Gun이 있다면 제거
@@ -124,27 +123,26 @@ void AAllyNPC::EquipGun()
 		// Gun을 왼손 소켓에 부착
 		AttachGunToSocket();
 		
-		UE_LOG(LogTemp, Log, TEXT("AAllyNPC::EquipGun - Gun이 성공적으로 장착되었습니다."));
+		GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Blue, FString::Printf(TEXT("Gun이 성공적으로 장착되었습니다.")));
 	}
+
 	else
-	{
-		UE_LOG(LogTemp, Error, TEXT("AAllyNPC::EquipGun - Gun 액터 생성에 실패했습니다."));
-	}
+		GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Blue, FString::Printf(TEXT("Gun 액터 생성에 실패했습니다.")));
 }
 
 void AAllyNPC::UnequipGun()
 {
-	if (equippedGun)
-	{
-		// Gun을 소켓에서 분리
-		DetachGunFromSocket();
-		
-		// Gun 액터 삭제
-		equippedGun->Destroy();
-		equippedGun = nullptr;
-		
-		UE_LOG(LogTemp, Log, TEXT("AAllyNPC::UnequipGun - Gun이 해제되었습니다."));
-	}
+	if (equippedGun == nullptr)
+		return;
+
+	// Gun을 소켓에서 분리
+	DetachGunFromSocket();
+
+	// Gun 액터 삭제
+	equippedGun->Destroy();
+	equippedGun = nullptr;
+
+	GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Red, TEXT("Gun이 성공적으로 해제되었습니다."));
 }
 
 void AAllyNPC::AttachGunToSocket()
@@ -155,31 +153,46 @@ void AAllyNPC::AttachGunToSocket()
     USkeletalMeshComponent* characterMesh = GetMesh();
     if (!characterMesh)
     {
-        UE_LOG(LogTemp, Error, TEXT("AAllyNPC::AttachGunToSocket - 캐릭터 메시를 찾을 수 없습니다."));
+		GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Red, TEXT("캐릭터 메시를 찾을 수 없음!"));
+
         return;
     }
 
     // 오른손 소켓 존재 확인 (Gun을 오른손에 장착)
     if (!characterMesh->DoesSocketExist(rightHandSocketName))
     {
-        UE_LOG(LogTemp, Error, TEXT("AAllyNPC::AttachGunToSocket - 소켓 '%s'을 찾을 수 없습니다."), *rightHandSocketName.ToString());
+		GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Red, FString::Printf(TEXT("소켓 '%s'을 찾을 수 없음!"), *rightHandSocketName.ToString()));
+
         return;
     }
 
-    // Gun을 오른손 소켓에 부착
+    // Gun을 오른손 소켓에 부착 - SnapToTarget 대신 KeepRelativeTransform 사용
     equippedGun->AttachToComponent(
         characterMesh,
-        FAttachmentTransformRules::SnapToTargetIncludingScale,
+        FAttachmentTransformRules::KeepRelativeTransform,
         rightHandSocketName
     );
 
-    // 추가 오프셋 적용
-    equippedGun->SetActorRelativeTransform(gunAttachOffset);
+    // Gun 위치와 회전을 더 정확하게 조정
+    FTransform adjustedTransform = gunAttachOffset;
+    
+    // Gun이 캐릭터의 앞을 향하도록 회전 조정
+    FRotator adjustedRotation = adjustedTransform.GetRotation().Rotator();
+    adjustedRotation.Yaw += 0.0f;   // 필요에 따라 조정
+    adjustedRotation.Pitch += 0.0f; // 필요에 따라 조정
+    adjustedRotation.Roll += 0.0f;  // 필요에 따라 조정
+    
+    adjustedTransform.SetRotation(adjustedRotation.Quaternion());
+    equippedGun->SetActorRelativeTransform(adjustedTransform);
 
     // NPC 장착 상태 설정
     equippedGun->SetEquippedByNPC(true);
 
-    UE_LOG(LogTemp, Log, TEXT("AAllyNPC::AttachGunToSocket - Gun이 소켓 '%s'에 부착되었습니다."), *rightHandSocketName.ToString());
+	GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Green, FString::Printf(TEXT("Gun이 소켓에 '%s'에 부착되었습니다."), *rightHandSocketName.ToString()));
+    
+    // 디버그 정보 출력
+    FVector gunLocation = equippedGun->GetActorLocation();
+    FRotator gunRotation = equippedGun->GetActorRotation();
 }
 
 void AAllyNPC::DetachGunFromSocket()
@@ -200,7 +213,8 @@ void AAllyNPC::StartGunFiring()
 		isFiring = true;
 		timeSinceLastShot = fireRate; // 즉시 첫 발사 가능
 		equippedGun->StartFire(); // Gun의 발사 함수 호출
-		UE_LOG(LogTemp, Log, TEXT("AAllyNPC::StartGunFiring - Gun 발사 시작"));
+
+		GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Green, TEXT("Gun 발사 시작!"));
 	}
 }
 
@@ -210,7 +224,8 @@ void AAllyNPC::StopGunFiring()
 	{
 		isFiring = false;
 		equippedGun->StopFire(); // Gun의 발사 중지 함수 호출
-		UE_LOG(LogTemp, Log, TEXT("AAllyNPC::StopGunFiring - Gun 발사 중지"));
+
+		GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Red, TEXT("Gun 발사 중지!"));
 	}
 }
 
@@ -219,7 +234,8 @@ void AAllyNPC::ReloadGun()
 	if (equippedGun)
 	{
 		equippedGun->Reload(); // Gun의 재장전 함수 호출
-		UE_LOG(LogTemp, Log, TEXT("AAllyNPC::ReloadGun - Gun 재장전"));
+
+		GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Green, TEXT("Gun 재장전 중..."));
 	}
 }
 
@@ -228,7 +244,14 @@ FTransform AAllyNPC::GetRightHandIKTransform() const
     // Gun이 장착되어 있지 않은 경우
     if (!equippedGun)
     {
-        UE_LOG(LogTemp, Warning, TEXT("AAllyNPC::GetRightHandIKTransform - Gun이 장착되지 않음"));
+        // 기본 오른손 위치 반환 (캐릭터 메시의 오른손 소켓 위치)
+        USkeletalMeshComponent* characterMesh = GetMesh();
+
+        if (characterMesh && characterMesh->DoesSocketExist(rightHandSocketName))
+            return characterMesh->GetSocketTransform(rightHandSocketName, RTS_World);
+        
+		GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Red, TEXT("Gun이 장착되지 않음! AllyNPC::GetRightHandIKTransform() 호출됨."));
+
         return FTransform::Identity;
     }
 
@@ -241,12 +264,44 @@ FTransform AAllyNPC::GetLeftHandIKTransform() const
     // Gun이 장착되어 있지 않은 경우
     if (!equippedGun)
     {
-        UE_LOG(LogTemp, Warning, TEXT("AAllyNPC::GetLeftHandIKTransform - Gun이 장착되지 않음"));
+        GEngine->AddOnScreenDebugMessage(-1, 1.0f, FColor::Orange, TEXT("Gun이 장착되지 않음! 기본 왼손 위치 사용"));
+        
+        // 기본 왼손 위치 반환 (캐릭터 메시의 왼손 소켓 위치)
+        USkeletalMeshComponent* characterMesh = GetMesh();
+
+        if (characterMesh && characterMesh->DoesSocketExist(leftHandSocketName))
+        {
+            FTransform defaultTransform = characterMesh->GetSocketTransform(leftHandSocketName, RTS_World);
+
+            return defaultTransform;
+        }
+        
         return FTransform::Identity;
     }
 
     // Gun에서 왼손 보조 파지 위치 가져오기
-    return equippedGun->GetLeftHandGripTransform();
+    FTransform leftHandTransform = equippedGun->GetLeftHandIKTransform();
+    
+    // 유효성 검사 - Identity가 아닌지 확인
+    if (leftHandTransform.Equals(FTransform::Identity))
+    {
+        GEngine->AddOnScreenDebugMessage(-1, 1.0f, FColor::Yellow, TEXT("Gun 왼손 IK 위치가 유효하지 않음"));
+        
+        // 대체 위치 계산: Gun의 현재 위치에서 앞쪽으로 오프셋
+        if (equippedGun)
+        {
+            FVector gunLocation = equippedGun->GetActorLocation();
+            FRotator gunRotation = equippedGun->GetActorRotation();
+            FVector leftHandOffset = FVector(20.0f, 0.0f, 0.0f); // 앞쪽 20cm
+            FVector leftHandLocation = gunLocation + gunRotation.RotateVector(leftHandOffset);
+            leftHandTransform = FTransform(gunRotation, leftHandLocation, FVector::OneVector);
+        }
+    }
+    
+    GEngine->AddOnScreenDebugMessage(-1, 0.1f, FColor::Cyan, 
+        FString::Printf(TEXT("NPC 왼손 IK: %s"), *leftHandTransform.GetLocation().ToString()));
+    
+    return leftHandTransform;
 }
 
 // === 이동 시스템 ===

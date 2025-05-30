@@ -202,10 +202,10 @@ void AAllyNPCAI::UpdateMovementState(float DeltaTime)
     const float distanceToPlayer = FVector::Dist(controlledAllyNPC->GetActorLocation(), playerPawn->GetActorLocation());
     
     // 디버그 정보 표시
-    GEngine->AddOnScreenDebugMessage(
-        -1, 0.1f, FColor::Yellow, 
-        FString::Printf(TEXT("플레이어와의 거리: %.2f / 팔로우 거리: %.2f"), distanceToPlayer, followDistance)
-    );
+    //GEngine->AddOnScreenDebugMessage(
+    //    -1, 0.1f, FColor::Yellow, 
+    //    FString::Printf(TEXT("플레이어와의 거리: %.2f / 팔로우 거리: %.2f"), distanceToPlayer, followDistance)
+    //);
 
     // 히스테리시스를 적용한 이동 상태 결정
     if (distanceToPlayer > followDistance * 1.1f)  // 이동 시작 임계값
@@ -290,14 +290,6 @@ void AAllyNPCAI::UpdateMovementDirection(float DeltaTime)
                 
                 // 보간된 회전 적용
                 controlledAllyNPC->SetActorRotation(interpolatedRotation);
-                
-                // 디버그 정보 표시
-                GEngine->AddOnScreenDebugMessage(
-                    -1, 0.1f, FColor::Green,
-                    FString::Printf(TEXT("보간 회전: Yaw=%.2f, 목표=%.2f, 이동 방향: X=%.2f, Y=%.2f"),
-                    interpolatedRotation.Yaw, targetRotation.Yaw, 
-                    currentMovementDirection.X, currentMovementDirection.Y)
-                );
             }
         }
         

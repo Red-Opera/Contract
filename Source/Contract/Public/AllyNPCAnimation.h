@@ -28,8 +28,18 @@ public:
     FTransform GetRightHandIKTransform() const;
 
     // 왼손 IK 타겟 위치 가져오기 (애니메이션 시스템에서 사용)
-    UFUNCTION(BlueprintCallable, Category = "Animation")
+    UFUNCTION(BlueprintCallable, Category = "Animation", meta = (BlueprintThreadSafe = "true"))
     FTransform GetLeftHandIKTransform() const;
+
+    // 추가: 스레드 안전한 개별 값 반환 함수들
+    UFUNCTION(BlueprintCallable, Category = "Animation", meta = (BlueprintThreadSafe = "true"))
+    FVector GetLeftHandIKLocation() const { return LeftHandIKLocation; }
+
+    UFUNCTION(BlueprintCallable, Category = "Animation", meta = (BlueprintThreadSafe = "true"))
+    FRotator GetLeftHandIKRotation() const { return LeftHandIKRotation; }
+
+    UFUNCTION(BlueprintCallable, Category = "Animation", meta = (BlueprintThreadSafe = "true"))
+    bool GetLeftHandIKValid() const { return isLeftHandIKValid; }
 
 protected:
     // 소유 캐릭터의 참조
@@ -129,6 +139,24 @@ protected:
 
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Sound")
     class USoundBase* fireSound;
+
+protected:
+    // 캐시된 IK 데이터 (스레드 안전)
+    UPROPERTY(BlueprintReadOnly, Category = "IK")
+    FVector LeftHandIKLocation;
+
+    UPROPERTY(BlueprintReadOnly, Category = "IK")
+    FRotator LeftHandIKRotation;
+
+    UPROPERTY(BlueprintReadOnly, Category = "IK")
+    bool isLeftHandIKValid;
+
+    UPROPERTY(BlueprintReadOnly, Category = "IK")
+    FTransform cachedLeftHandIKTransform;
+
+private:
+    // IK 캐시 업데이트 함수
+    void UpdateLeftHandIKCache();
 
 public:
     // === 몽타주 재생 함수들 ===

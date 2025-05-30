@@ -2,6 +2,8 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include "Engine/StaticMesh.h"
+#include "Engine/StaticMeshSocket.h"
 #include "Bullet.h"
 #include "Gun.generated.h"
 
@@ -75,8 +77,12 @@ public:
     FTransform GetRightHandGripTransform() const;
 
     // 왼손 보조 파지 위치 가져오기 (NPC IK용)
-    UFUNCTION(BlueprintCallable, Category = "NPC Setup")
+    UFUNCTION(BlueprintCallable, Category = "NPC Setup", meta = (BlueprintThreadSafe = "true"))
     FTransform GetLeftHandGripTransform() const;
+
+    // 왼손 IK 트랜스폼 함수 추가
+    UFUNCTION(BlueprintCallable, Category = "NPC Setup", meta = (BlueprintThreadSafe = "true"))
+    FTransform GetLeftHandIKTransform() const;
 
     // Gun이 NPC에 장착되었는지 확인
     UFUNCTION(BlueprintCallable, Category = "NPC Setup")
@@ -85,6 +91,65 @@ public:
     // NPC 장착 상태 설정
     UFUNCTION(BlueprintCallable, Category = "NPC Setup")
     void SetEquippedByNPC(bool bEquipped);
+
+    // 소켓 존재 여부 확인 함수 수정
+    UFUNCTION(BlueprintCallable, Category = "Debug")
+    bool DoesLeftHandSocketExist() const
+    {
+        return mesh && mesh->DoesSocketExist(leftHandGripSocketName);
+    }
+
+    UFUNCTION(BlueprintCallable, Category = "Debug")
+    TArray<FName> GetAvailableSockets() const
+    {
+        TArray<FName> socketNames;
+        if (mesh && mesh->GetStaticMesh())
+        {
+            // 스태틱 메시의 소켓 정보 가져오기
+            const TArray<UStaticMeshSocket*>& sockets = mesh->GetStaticMesh()->Sockets;
+            for (const UStaticMeshSocket* socket : sockets)
+            {
+                if (socket)
+                {
+                    socketNames.Add(socket->SocketName);
+                }
+            }
+        }
+        return socketNames;
+    }
+
+    // 더 간단한 디버그 함수 추가
+    UFUNCTION(BlueprintCallable, Category = "Debug")
+    void PrintAvailableSockets() const
+    {
+        if (mesh && mesh->GetStaticMesh())
+        {
+            const TArray<UStaticMeshSocket*>& sockets = mesh->GetStaticMesh()->Sockets;
+            UE_LOG(LogTemp, Log, TEXT("Gun에서 사용 가능한 소켓들:"));
+            GEngine->AddOnScreenDebugMessage(-1, 10.0f, FColor::Blue, TEXT("Gun 소켓 목록:"));
+            
+            for (int32 i = 0; i < sockets.Num(); i++)
+            {
+                if (sockets[i])
+                {
+                    FString socketInfo = FString::Printf(TEXT("소켓 %d: %s"), i, *sockets[i]->SocketName.ToString());
+                    UE_LOG(LogTemp, Log, TEXT("%s"), *socketInfo);
+                    GEngine->AddOnScreenDebugMessage(-1, 10.0f, FColor::Green, socketInfo);
+                }
+            }
+            
+            if (sockets.Num() == 0)
+            {
+                UE_LOG(LogTemp, Warning, TEXT("Gun 메시에 소켓이 없습니다!"));
+                GEngine->AddOnScreenDebugMessage(-1, 10.0f, FColor::Red, TEXT("Gun 메시에 소켓이 없습니다!"));
+            }
+        }
+        else
+        {
+            UE_LOG(LogTemp, Error, TEXT("Gun 메시 또는 스태틱 메시가 없습니다!"));
+            GEngine->AddOnScreenDebugMessage(-1, 10.0f, FColor::Red, TEXT("Gun 메시가 없습니다!"));
+        }
+    }
 
 protected:
     virtual void BeginPlay() override;
