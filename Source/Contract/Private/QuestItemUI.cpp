@@ -69,9 +69,6 @@ bool UQuestItemUI::Initialize()
 		return false;
     }
 
-    // 기본 스타일 설정
-    questBorder->SetBrushColor(defaultBackgroundColor);
-
     // 아이콘 설정
     moneyIcon->SetBrushFromTexture(goldIconTexture);
     expIcon->SetBrushFromTexture(expIconTexture);

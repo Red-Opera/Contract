@@ -8,6 +8,9 @@
 #include "Components/TextBlock.h"
 #include "Components/Border.h"
 #include "Components/Button.h"
+#include "Components/Image.h"
+#include "Components/HorizontalBox.h"
+#include "Components/VerticalBox.h"
 #include "QuestUI.generated.h"
 
 UCLASS()
@@ -88,6 +91,34 @@ protected:
     UPROPERTY(meta = (BindWidget))
     UTextBlock* questConditionsText;
 
+    // ===================================
+    // 회색 보상 영역 UI 요소들
+    // ===================================
+
+    // 보상 영역 배경 패널
+    UPROPERTY(meta = (BindWidget))
+    UBorder* rewardsBgPanel;
+
+    // 보상 제목 텍스트
+    UPROPERTY(meta = (BindWidget))
+    UTextBlock* rewardsTitleText;
+
+    // 골드 보상 컨테이너
+    UPROPERTY(meta = (BindWidget))
+    UHorizontalBox* goldRewardContainer;
+
+    // 경험치 보상 컨테이너
+    UPROPERTY(meta = (BindWidget))
+    UHorizontalBox* expRewardContainer;
+
+    // 골드 아이콘
+    UPROPERTY(meta = (BindWidget))
+    UImage* goldIcon;
+
+    // 경험치 아이콘
+    UPROPERTY(meta = (BindWidget))
+    UImage* expIcon;
+
     // 퀘스트 보상 - 돈
     UPROPERTY(meta = (BindWidget))
     UTextBlock* questMoneyRewardText;
@@ -96,6 +127,10 @@ protected:
     UPROPERTY(meta = (BindWidget))
     UTextBlock* questExpRewardText;
 
+    // 아이템 보상 목록 컨테이너
+    UPROPERTY(meta = (BindWidget))
+    UVerticalBox* itemRewardsBox;
+
     // 닫기 버튼
     UPROPERTY(meta = (BindWidget))
     UButton* closeButton;
@@ -103,7 +138,23 @@ protected:
     // 퀘스트 항목 위젯 클래스
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Quest")
     TSubclassOf<class UQuestItemUI> questItemWidgetClass;
-    
+
+    // ===================================
+    // 아이콘 및 스타일 설정
+    // ===================================
+
+    // 골드 아이콘 텍스처
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Appearance")
+    UTexture2D* goldIconTexture;
+
+    // 경험치 아이콘 텍스처
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Appearance")
+    UTexture2D* expIconTexture;
+
+    // 제목 텍스트 색상
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Appearance")
+    FLinearColor titleTextColor = FLinearColor(0.5f, 0.8f, 0.2f, 1.0f);
+
     class APlayerController* playerController;                  // 플레이어 컨트롤러
     class UCharacterMovementComponent* playerMovementComponent; // 플레이어 이동관련 컴포넌트
 

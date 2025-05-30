@@ -284,11 +284,36 @@ void UQuestUI::DisplayQuestDetails(const FQuestInfo& QuestInfo)
     if (questConditionsText)
         questConditionsText->SetText(FText::FromString(QuestInfo.conditions));
 
+    // 보상 배경 패널 설정
+    if (rewardsBgPanel)
+        rewardsBgPanel->SetVisibility(ESlateVisibility::Visible);
+
+    // 보상 제목 설정
+    if (rewardsTitleText)
+        rewardsTitleText->SetText(FText::FromString(TEXT("획득 보상")));
+
+    // 골드 아이콘 설정 (있는 경우)
+    if (goldIcon && goldIconTexture)
+        goldIcon->SetBrushFromTexture(goldIconTexture);
+
+    // 경험치 아이콘 설정 (있는 경우)
+    if (expIcon && expIconTexture)
+        expIcon->SetBrushFromTexture(expIconTexture);
+
     // 보상 - 돈 설정
     if (questMoneyRewardText)
-        questMoneyRewardText->SetText(FText::FromString(FString::Printf(TEXT("%d Gold"), QuestInfo.money)));
+        questMoneyRewardText->SetText(FText::FromString(FString::Printf(TEXT("%d"), QuestInfo.money)));
 
     // 보상 - 경험치 설정
     if (questExpRewardText)
-        questExpRewardText->SetText(FText::FromString(FString::Printf(TEXT("%d XP"), QuestInfo.experiencePoints)));
+        questExpRewardText->SetText(FText::FromString(FString::Printf(TEXT("%d"), QuestInfo.experiencePoints)));
+
+    // 아이템 보상 표시 (필요한 경우)
+    if (itemRewardsBox)
+    {
+        itemRewardsBox->ClearChildren();
+
+        // 아이템 보상 추가 로직이 필요한 경우 여기에 구현
+        // QuestInfo.rewardItems를 순회하면서 각 아이템에 대한 UI 요소 생성
+    }
 }
