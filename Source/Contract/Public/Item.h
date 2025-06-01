@@ -2,6 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include "Sound/SoundCue.h"
 #include "Item.generated.h"
 
 UCLASS()
@@ -37,6 +38,12 @@ public:
 	// 아이템 아이콘 이미지
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item")
 	UTexture2D* itemIcon;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sound")
+	USoundCue* useSound;							// 아이템 사용하자마자 재생되는 사운드
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sound")
+	USoundCue* throwSound;							// 아이템을 던질 때 재생되는 사운드
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Interaction")
 	float interactionDistance = 120.0f;

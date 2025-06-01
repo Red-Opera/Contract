@@ -188,11 +188,32 @@ void UPlayerEquidItem::LoadInventoryData()
 
 void UPlayerEquidItem::ThrowItemTrigger()
 {
-	if (!currentEquippedItem)
+	if (currentEquippedItem == nullptr)
 	{
 		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("아이템이 장착되어 있지 않음"));
 
 		return;
+	}
+
+	AItem* item = Cast<AItem>(currentEquippedItem);
+
+	if (item == nullptr)
+	{
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("장착된 아이템이 AItem이 아님"));
+
+		return;
+	}
+
+	if (item->useSound != nullptr)
+	{
+		UGameplayStatics::PlaySoundAtLocation(
+			GetWorld(),
+			item->useSound,
+			item->GetActorLocation(),
+			1.0f,		// VolumeMultiplier
+			1.0f,		// PitchMultiplier
+			0.0f		// StartTime
+		);
 	}
 
 	// 애니메이션 isThrow bool 변수 true로 설정
@@ -235,7 +256,7 @@ void UPlayerEquidItem::ThrowItem()
 	// 물리 시뮬레이션 활성화
 	UPrimitiveComponent* itemMesh = Cast<UPrimitiveComponent>(currentEquippedItem->GetRootComponent());
 
-	if (itemMesh)
+	if (itemMesh != nullptr)
 	{
 		itemMesh->SetSimulatePhysics(true);
 		itemMesh->SetEnableGravity(true);
@@ -258,6 +279,19 @@ void UPlayerEquidItem::ThrowItem()
 	// 아이템 사용
 	AItem* item = Cast<AItem>(currentEquippedItem);
 	item->UseItem();
+	
+	// 던지는 사운드 재생
+	if (item->throwSound != nullptr)
+	{
+		UGameplayStatics::PlaySoundAtLocation(
+			GetWorld(),
+			item->throwSound,
+			item->GetActorLocation(),
+			1.0f,		// VolumeMultiplier
+			1.0f,		// PitchMultiplier
+			0.0f		// StartTime
+		);
+	}
 
 	currentEquippedItem = nullptr; // 장착된 아이템 초기화
 }

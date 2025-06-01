@@ -1,6 +1,7 @@
 ﻿#include "Grenade.h"
 #include "PlayerInventory.h"
 #include "IDToItem.h"
+#include "Kismet/GameplayStatics.h"
 
 void AGrenade::BeginPlay()
 {
@@ -29,6 +30,19 @@ void AGrenade::UseItem()
 void AGrenade::Explosion()
 {
 	RemoveItemMesh();
+
+	// 폭발 사운드 재생
+	if (explosionSoundCue)
+	{
+		UGameplayStatics::PlaySoundAtLocation(
+			GetWorld(),
+			explosionSoundCue,
+			GetActorLocation(),
+			1.0f,		// VolumeMultiplier
+			1.0f,		// PitchMultiplier
+			0.0f		// StartTime
+		);
+	}
 
 	// 폭발 효과를 위한 메쉬 스폰
 	if (explosionMesh)
