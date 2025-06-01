@@ -6,21 +6,29 @@
 
 #include "Components/ArrowComponent.h"  
 #include "Components/StaticMeshComponent.h"
+#include "Components/AudioComponent.h"
 #include "GameFramework/PlayerController.h"  
+#include "Sound/SoundCue.h"
+#include "Kismet/GameplayStatics.h"
 
 // Sets default values
 AGun::AGun()
 {
-	PrimaryActorTick.bCanEverTick = true;
+    PrimaryActorTick.bCanEverTick = true;
 
-	mesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Mesh"));
+    mesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Mesh"));
     muzzle = CreateDefaultSubobject<UArrowComponent>(TEXT("Muzzle"));
     gunMuzzleFireNiagara = CreateDefaultSubobject<UNiagaraComponent>(TEXT("GunFireNiagara"));
+    audioComponent = CreateDefaultSubobject<UAudioComponent>(TEXT("AudioComponent"));
 
-	RootComponent = mesh;
-	muzzle->SetupAttachment(mesh);
-	gunMuzzleFireNiagara->SetupAttachment(mesh);
-	muzzle->SetRelativeRotation(FRotator(0.0f, -90.0f, 0.0f));
+    RootComponent = mesh;
+    muzzle->SetupAttachment(mesh);
+    gunMuzzleFireNiagara->SetupAttachment(mesh);
+    audioComponent->SetupAttachment(mesh);
+    muzzle->SetRelativeRotation(FRotator(0.0f, -90.0f, 0.0f));
+    
+    // 오디오 컴포넌트 기본 설정
+    audioComponent->bAutoActivate = false; // 자동 재생 방지
 }
 
 void AGun::BeginPlay()
@@ -92,10 +100,14 @@ void AGun::Fire()
     if (currentAmmoEquipped <= 0)
     {
         StopFire();
+
         return;
     }
 
-	currentAmmoEquipped--;
+    currentAmmoEquipped--;
+    
+    // 발사 사운드 재생
+    PlayFireSound();
 
     FVector muzzleLocation = muzzle->GetComponentLocation();
     FRotator muzzleRotation = muzzle->GetComponentRotation();
@@ -120,7 +132,12 @@ void AGun::Fire()
 void AGun::StartFire()
 {
     if (currentAmmoEquipped <= 0)
+    {
+        // 빈 탄창 소리 재생
+        PlayEmptyClipSound();
+
         return;
+    }
 
     isFire = true;
 
@@ -141,23 +158,26 @@ void AGun::StopFire()
 
 void AGun::Reload()
 {
-	int requireAmmo = maxAmmoEquipped - currentAmmoEquipped;
+    int requireAmmo = maxAmmoEquipped - currentAmmoEquipped;
 
-	if (playerInventory->bulletCount >= requireAmmo)
-	{
+    if (playerInventory->bulletCount >= requireAmmo)
+    {
         playerInventory->bulletCount -= requireAmmo;
-		currentAmmoEquipped += requireAmmo;
-	}
+        currentAmmoEquipped += requireAmmo;
+    }
 
-	else
-	{
-		currentAmmoEquipped += playerInventory->bulletCount;
+    else
+    {
+        currentAmmoEquipped += playerInventory->bulletCount;
         playerInventory->bulletCount = 0;
-	}
+    }
+    
+    // 재장전 사운드 재생
+    PlayReloadSound();
 
-	// 남은 총알 수 출력
-	FString ammoCountStr = FString::Printf(TEXT("현재 장착된 총알 수: %d"), currentAmmoEquipped);
-	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, ammoCountStr);
+    // 남은 총알 수 출력
+    FString ammoCountStr = FString::Printf(TEXT("현재 장착된 총알 수: %d"), currentAmmoEquipped);
+    GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, ammoCountStr);
 }
 
 FTransform AGun::GetRightHandGripTransform() const
@@ -282,8 +302,111 @@ void AGun::SetEquippedByNPC(bool bEquipped)
     {
         UE_LOG(LogTemp, Log, TEXT("AGun::SetEquippedByNPC - Gun이 NPC에 장착되었습니다."));
     }
+
+    else
+        UE_LOG(LogTemp, Log, TEXT("AGun::SetEquippedByNPC - Gun이 NPC에서 해제되었습니다."));
+}
+
+bool AGun::DoesLeftHandSocketExist() const
+{
+    return mesh && mesh->DoesSocketExist(leftHandGripSocketName);
+}
+
+TArray<FName> AGun::GetAvailableSockets() const
+{
+    TArray<FName> socketNames;
+
+    if (mesh && mesh->GetStaticMesh())
+    {
+        // 스태틱 메시의 소켓 정보 가져오기
+        const TArray<UStaticMeshSocket*>& sockets = mesh->GetStaticMesh()->Sockets;
+        for (const UStaticMeshSocket* socket : sockets)
+        {
+            if (socket)
+            {
+                socketNames.Add(socket->SocketName);
+            }
+        }
+    }
+    return socketNames;
+}
+
+void AGun::PrintAvailableSockets() const
+{
+    if (mesh != nullptr && mesh->GetStaticMesh())
+    {
+        const TArray<UStaticMeshSocket*>& sockets = mesh->GetStaticMesh()->Sockets;
+        UE_LOG(LogTemp, Log, TEXT("Gun에서 사용 가능한 소켓들:"));
+        GEngine->AddOnScreenDebugMessage(-1, 10.0f, FColor::Blue, TEXT("Gun 소켓 목록:"));
+
+        for (int32 i = 0; i < sockets.Num(); i++)
+        {
+            if (sockets[i])
+            {
+                FString socketInfo = FString::Printf(TEXT("소켓 %d: %s"), i, *sockets[i]->SocketName.ToString());
+                UE_LOG(LogTemp, Log, TEXT("%s"), *socketInfo);
+                GEngine->AddOnScreenDebugMessage(-1, 10.0f, FColor::Green, socketInfo);
+            }
+        }
+
+        if (sockets.Num() == 0)
+        {
+            UE_LOG(LogTemp, Warning, TEXT("Gun 메시에 소켓이 없습니다!"));
+            GEngine->AddOnScreenDebugMessage(-1, 10.0f, FColor::Red, TEXT("Gun 메시에 소켓이 없습니다!"));
+        }
+    }
+
     else
     {
-        UE_LOG(LogTemp, Log, TEXT("AGun::SetEquippedByNPC - Gun이 NPC에서 해제되었습니다."));
+        UE_LOG(LogTemp, Error, TEXT("Gun 메시 또는 스태틱 메시가 없습니다!"));
+        GEngine->AddOnScreenDebugMessage(-1, 10.0f, FColor::Red, TEXT("Gun 메시가 없습니다!"));
     }
+}
+
+void AGun::PlayFireSound()
+{
+    if (fireSoundCue == nullptr)
+        return;
+
+    // UGameplayStatics를 사용한 3D 사운드 재생
+    UGameplayStatics::PlaySoundAtLocation(
+        GetWorld(),
+        fireSoundCue,
+        GetActorLocation(),
+        GetActorRotation(),
+        1.0f, // 볼륨
+        1.0f  // 피치
+    );
+}
+
+void AGun::PlayReloadSound()
+{
+    if (reloadSoundCue == nullptr)
+        return;
+
+    // UGameplayStatics를 사용한 3D 사운드 재생
+    UGameplayStatics::PlaySoundAtLocation(
+        GetWorld(),
+        reloadSoundCue,
+        GetActorLocation(),
+        GetActorRotation(),
+        1.0f, // 볼륨
+        1.0f  // 피치
+    );
+}
+
+void AGun::PlayEmptyClipSound()
+{
+    if (emptyClipSoundCue == nullptr)
+        return;
+
+    // UGameplayStatics를 사용한 3D 사운드 재생
+    UGameplayStatics::PlaySoundAtLocation(
+        GetWorld(),
+        emptyClipSoundCue,
+        GetActorLocation(),
+        GetActorRotation(),
+        1.0f, // 볼륨
+        1.0f  // 피치
+    );
 }

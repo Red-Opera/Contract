@@ -4,6 +4,8 @@
 #include "GameFramework/Actor.h"
 #include "Engine/StaticMesh.h"
 #include "Engine/StaticMeshSocket.h"
+#include "Sound/SoundCue.h"
+#include "Components/AudioComponent.h"
 #include "Bullet.h"
 #include "Gun.generated.h"
 
@@ -44,6 +46,24 @@ public:
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bullet")
     class UNiagaraComponent* gunMuzzleFireNiagara;
+
+    // === 사운드 관련 ===
+    
+    // 총 발사 사운드 큐
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sound")
+    class USoundCue* fireSoundCue;
+    
+    // 재장전 사운드 큐
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sound")
+    class USoundCue* reloadSoundCue;
+    
+    // 빈 탄창 클릭 사운드 큐
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sound")
+    class USoundCue* emptyClipSoundCue;
+    
+    // 오디오 컴포넌트
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sound")
+    class UAudioComponent* audioComponent;
 
     // === NPC가 사용할 수 있는 공개 함수들 ===
     
@@ -94,62 +114,14 @@ public:
 
     // 소켓 존재 여부 확인 함수 수정
     UFUNCTION(BlueprintCallable, Category = "Debug")
-    bool DoesLeftHandSocketExist() const
-    {
-        return mesh && mesh->DoesSocketExist(leftHandGripSocketName);
-    }
+    bool DoesLeftHandSocketExist() const;
 
     UFUNCTION(BlueprintCallable, Category = "Debug")
-    TArray<FName> GetAvailableSockets() const
-    {
-        TArray<FName> socketNames;
-        if (mesh && mesh->GetStaticMesh())
-        {
-            // 스태틱 메시의 소켓 정보 가져오기
-            const TArray<UStaticMeshSocket*>& sockets = mesh->GetStaticMesh()->Sockets;
-            for (const UStaticMeshSocket* socket : sockets)
-            {
-                if (socket)
-                {
-                    socketNames.Add(socket->SocketName);
-                }
-            }
-        }
-        return socketNames;
-    }
+    TArray<FName> GetAvailableSockets() const;
 
     // 더 간단한 디버그 함수 추가
     UFUNCTION(BlueprintCallable, Category = "Debug")
-    void PrintAvailableSockets() const
-    {
-        if (mesh && mesh->GetStaticMesh())
-        {
-            const TArray<UStaticMeshSocket*>& sockets = mesh->GetStaticMesh()->Sockets;
-            UE_LOG(LogTemp, Log, TEXT("Gun에서 사용 가능한 소켓들:"));
-            GEngine->AddOnScreenDebugMessage(-1, 10.0f, FColor::Blue, TEXT("Gun 소켓 목록:"));
-            
-            for (int32 i = 0; i < sockets.Num(); i++)
-            {
-                if (sockets[i])
-                {
-                    FString socketInfo = FString::Printf(TEXT("소켓 %d: %s"), i, *sockets[i]->SocketName.ToString());
-                    UE_LOG(LogTemp, Log, TEXT("%s"), *socketInfo);
-                    GEngine->AddOnScreenDebugMessage(-1, 10.0f, FColor::Green, socketInfo);
-                }
-            }
-            
-            if (sockets.Num() == 0)
-            {
-                UE_LOG(LogTemp, Warning, TEXT("Gun 메시에 소켓이 없습니다!"));
-                GEngine->AddOnScreenDebugMessage(-1, 10.0f, FColor::Red, TEXT("Gun 메시에 소켓이 없습니다!"));
-            }
-        }
-        else
-        {
-            UE_LOG(LogTemp, Error, TEXT("Gun 메시 또는 스태틱 메시가 없습니다!"));
-            GEngine->AddOnScreenDebugMessage(-1, 10.0f, FColor::Red, TEXT("Gun 메시가 없습니다!"));
-        }
-    }
+    void PrintAvailableSockets() const;
 
 protected:
     virtual void BeginPlay() override;
@@ -165,4 +137,15 @@ private:
 
     // NPC 장착 상태 플래그
     bool bIsEquippedByNPC = false;
+    
+    // === 사운드 재생 함수들 ===
+    
+    // 발사 사운드 재생
+    void PlayFireSound();
+    
+    // 재장전 사운드 재생
+    void PlayReloadSound();
+    
+    // 빈 탄창 사운드 재생
+    void PlayEmptyClipSound();
 };
