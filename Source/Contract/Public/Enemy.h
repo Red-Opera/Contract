@@ -1,39 +1,63 @@
-﻿#pragma once
+﻿// Fill out your copyright notice in the Description page of Project Settings.
+
+#pragma once
 
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
 #include "Gun.h"
-#include "AllyNPC.generated.h"
+#include "Enemy.generated.h"
 
 class UPawnSensingComponent;
 
-/**
- * AAllyNPC - 플레이어를 지원하는 동맹 NPC 캐릭터 클래스
- * AI 컨트롤러에 의해 제어되며 플레이어를 따라다니며 전투 지원을 제공
- */
 UCLASS()
-class CONTRACT_API AAllyNPC : public ACharacter
+class CONTRACT_API AEnemy : public ACharacter
 {
     GENERATED_BODY()
 
 public:
-    // 생성자 - 기본 컴포넌트 및 속성 초기화
-    AAllyNPC();
+    // Sets default values for this character's properties
+    AEnemy();
 
-protected:
-    // 게임 시작 시 호출되는 초기화 함수
-    virtual void BeginPlay() override;
+    // Called every frame
+    virtual void Tick(float DeltaTime) override;
 
-public:
-    // 매 프레임 호출되는 업데이트 함수
-    virtual void Tick(float deltaTime) override;
-    
-    // 입력 바인딩 설정 (NPC는 직접 입력을 받지 않음)
-    virtual void SetupPlayerInputComponent(class UInputComponent* playerInputComponent) override;
+    // Called to bind functionality to input
+    virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
-    // AI 센싱 컴포넌트 - 주변 환경 감지
-    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AI")
-    UPawnSensingComponent* pawnSensingComp;
+    void SetDamage(FVector hitLocation, int damage);
+
+    // 데미지 표기 나이아가라
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
+    TSubclassOf<class AFloatingDamage> damageParticle;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
+    float textOffset = 25.0f;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
+    TArray<UTexture*> digitImage;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
+    bool isDead = false;
+
+    // 발사 여부
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bullet")
+    bool isFire;
+
+    // 발사 딜레이
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bullet")
+    float fireRate = 0.1f;
+
+    // 적이 갖고 있는 아이템
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Items")
+    TArray<int> itemCount;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Items")
+    int money = 0;
+
+    // === 애니메이션 시스템을 위한 추가 부분 ===
+    // 애니메이션 파라미터 - 이동 벡터 (X: 전/후, Y: 좌/우)
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Animation")
+    FVector2D movementVector;
 
     // === 무기 시스템 ===
     // Gun 액터 참조 - 유일한 무기 시스템
@@ -62,10 +86,6 @@ public:
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Movement")
     float runSpeed = 500.0f;
 
-    // 애니메이션 파라미터 - 이동 벡터 (X: 전/후, Y: 좌/우)
-    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Animation")
-    FVector2D movementVector;
-
     // === 무기 관련 함수 ===
     // Gun 장착/해제 함수
     UFUNCTION(BlueprintCallable, Category = "Weapon")
@@ -85,17 +105,6 @@ public:
     UFUNCTION(BlueprintCallable, Category = "Weapon")
     void ReloadGun();
 
-    // === 이동 함수 ===
-    UFUNCTION(BlueprintCallable, Category = "Movement")
-    void UpdateMovementState(bool isRunning, const FVector& direction);
-
-    // === 기존 전투 함수 (호환성 유지) ===
-    UFUNCTION(BlueprintCallable, Category = "Combat")
-    void StartFiring();
-
-    UFUNCTION(BlueprintCallable, Category = "Combat")
-    void StopFiring();
-
     // === IK 지원 함수 ===
     // 오른손 IK 타겟 위치 가져오기 (애니메이션 시스템에서 사용)
     UFUNCTION(BlueprintCallable, Category = "Animation")
@@ -109,11 +118,37 @@ public:
     UFUNCTION(BlueprintCallable, Category = "Weapon")
     bool HasGunEquipped() const { return equippedGun != nullptr; }
 
+    // === 이동 상태 업데이트 함수 (AllyNPC와 동일) ===
+    UFUNCTION(BlueprintCallable, Category = "Movement")
+    void UpdateMovementState(bool isRunning, const FVector& direction);
+
+protected:
+    // Called when the game starts or when spawned
+    virtual void BeginPlay() override;
+
 private:
+    // 발사 함수
+    void Fire();
+    void StartFire();
+    void StopFire();
+
+    void Death();
+
+    class AActor* player;
+    class APlayerController* playerController;
+    class UIDToItem* idToItem;
+
+    float hp = 1000.0f;
+
+    FTimerHandle TimerHandle_AutoFire;
+
+    // === 무기 시스템 헬퍼 함수 ===
+    void AttachGunToSocket();   // Gun을 소켓에 부착
+    void DetachGunFromSocket(); // Gun을 소켓에서 분리
+
     // 전투 상태 변수
     bool isFiring;              // 현재 발사 중인지 여부
     float timeSinceLastShot;    // 마지막 발사 이후 경과 시간
-    float fireRate = 0.1f;      // 발사 간격 (초)
 
     // 애니메이션 보간 변수
     FVector2D previousMovementVector;           // 이전 이동 벡터 (보간용)
@@ -121,8 +156,4 @@ private:
 
     // 이동 벡터 업데이트 함수 - 애니메이션 파라미터 계산
     void UpdateMovementVector(const FVector& Direction, bool bIsRunning);
-    
-    // Gun 시스템 헬퍼 함수
-    void AttachGunToSocket();   // Gun을 소켓에 부착
-    void DetachGunFromSocket(); // Gun을 소켓에서 분리
 };
