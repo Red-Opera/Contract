@@ -4,15 +4,22 @@
 #include "DetourCrowdAIController.h"
 #include "OccupiedTerritory.h"
 #include "Perception/AIPerceptionComponent.h"
+#include "Perception/AIPerceptionTypes.h"
 #include "BehaviorTree/BehaviorTree.h"
 #include "BehaviorTree/BlackboardData.h"
+#include "BehaviorTree/BlackboardComponent.h"
 #include "Navigation/PathFollowingComponent.h"
 #include "AITypes.h"
 #include "EnemyAI.generated.h"
 
+// 전방 선언
+class AEnemy;
+class AOccupiedTerritory;
+class UAIPerceptionComponent;
+
 /**
- * AEnemyAI - 적 캐릭터를 제어하는 AI 컨트롤러 클래스
- * 아군 영역을 찾아 이동하고 공격하는 AI 로직 구현
+ * AEnemyAI - TPS Kit GASP 시스템을 지원하는 적 캐릭터 AI 컨트롤러
+ * Combat, Alert, Patrol 상태를 관리하며 비헤이비어 트리와 연동
  */
 UCLASS()
 class CONTRACT_API AEnemyAI : public ADetourCrowdAIController
@@ -20,122 +27,205 @@ class CONTRACT_API AEnemyAI : public ADetourCrowdAIController
     GENERATED_BODY()
     
 public:
-    // 위젯 초기화
+    // 생성자 및 기본 함수
     AEnemyAI();
     virtual void OnPossess(APawn* InPawn) override;
     virtual void OnUnPossess() override;
 
-    // 아군 영역 탐색 및 이동 기능
+    // === TPS Kit GASP 시스템 - 상태 관리 ===
+    UFUNCTION(BlueprintCallable, Category = "GASP System")
+    void EnterCombatState(AActor* Target);
+
+    UFUNCTION(BlueprintCallable, Category = "GASP System")
+    void EnterAlertState(const FVector& LastKnownLocation);
+
+    UFUNCTION(BlueprintCallable, Category = "GASP System")
+    void EnterPatrolState();
+
+    UFUNCTION(BlueprintCallable, Category = "GASP System")
+    void ClearAllStates();
+
+    // === 아군 영역 탐색 기능 (블루프린트 전용) ===
     UFUNCTION(BlueprintCallable, Category = "AI Movement")
     AOccupiedTerritory* FindNearestFriendlyTerritory();
 
-    UFUNCTION(BlueprintCallable, Category = "AI Movement")
-    void MoveToFriendlyTerritory();
-
-    UFUNCTION(BlueprintCallable, Category = "AI Movement")
-    void MoveToTargetLocation(FVector targetLocation);
-
-    // 전투 관련 함수
+    // === 전투 관련 함수 ===
     UFUNCTION(BlueprintCallable, Category = "Combat")
     void StartAttack();
 
     UFUNCTION(BlueprintCallable, Category = "Combat")
     void StopAttack();
 
-    // 현재 공격 중인지 확인
+    UFUNCTION(BlueprintCallable, Category = "Combat")
+    void StartBurstFire();
+
+    UFUNCTION(BlueprintCallable, Category = "Combat")
+    void StopBurstFire();
+
+    // === 상태 확인 함수 ===
+    UFUNCTION(BlueprintPure, Category = "GASP System")
+    bool GetInCombat() const;
+
+    UFUNCTION(BlueprintPure, Category = "GASP System")
+    bool GetAlert() const;
+
+    UFUNCTION(BlueprintPure, Category = "GASP System")
+    bool GetPatrolling() const;
+
     UFUNCTION(BlueprintPure, Category = "Combat")
     bool GetIsAttacking() const { return isAttacking; }
 
-    // 현재 이동 중인지 확인
-    UFUNCTION(BlueprintPure, Category = "AI Movement")
-    bool GetIsMovingToTerritory() const { return isMovingToTerritory; }
+    // === 🔧 이동 관련 함수 제거 ===
+    // bool GetIsMovingToTerritory() const - 제거
 
-    // 인식 시스템 이벤트 핸들러
+    // === 🔧 비헤이비어 트리 상태 확인 함수 추가 ===
+    UFUNCTION(BlueprintPure, Category = "AI System")
+    bool HasBehaviorTree() const { return BehaviorTree != nullptr && GetBlackboardComponent() != nullptr; }
+
+    UFUNCTION(BlueprintPure, Category = "AI System")
+    bool IsAISystemActive() const { return HasBehaviorTree(); }
+
+    // === 인식 시스템 이벤트 핸들러 ===
     UFUNCTION()
     void OnPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus);
 
-    // AI 인식 시스템
+    // === AI 컴포넌트들 ===
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AI")
     UAIPerceptionComponent* AIPerceptionComp;
 
-    // AI 행동 결정 시스템
+    // === 비헤이비어 트리 시스템 ===
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "AI")
     UBehaviorTree* BehaviorTree;
 
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "AI")
     UBlackboardData* blackboardData;
 
-    // AI 이동 파라미터
-    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "AI")
-    float searchRadius = 2000.0f;                           // 영역 검색 반경
+    // === AI 이동 파라미터 ===
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "AI Movement")
+    float searchRadius = 2000.0f;
 
-    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "AI")
-    float acceptanceRadius = 100.0f;                        // 목적지 도달 허용 거리
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "AI Movement")
+    float acceptanceRadius = 100.0f;
+
+    // === TPS Kit GASP 시스템 - 전투 설정 ===
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GASP Combat")
+    float combatEngagementRange = 1200.0f;
+
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GASP Combat")
+    float combatDisengagementRange = 1500.0f;
+
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GASP Combat")
+    float optimalFiringDistance = 800.0f;
+
+    // === Alert 시스템 설정 ===
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GASP Alert")
+    float alertDuration = 10.0f;
+
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GASP Alert")
+    float alertSearchRadius = 500.0f;
+
+    // === 인식 시스템 설정 ===
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "AI Perception")
+    float sightRadius = 1500.0f;
+
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "AI Perception")
+    float loseSightRadius = 2000.0f;
+
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "AI Perception")
+    float peripheralVisionAngle = 90.0f;
 
 protected:
-    // 기본 라이프사이클 함수
+    // === 기본 라이프사이클 함수 ===
     virtual void BeginPlay() override;
     virtual void Tick(float deltaTime) override;
     
-    // 이동 완료 시 호출
-    virtual void OnMoveCompleted(FAIRequestID RequestID, const FPathFollowingResult& Result) override;
+    // === TPS Kit GASP 시스템 - 업데이트 함수들 (비활성화됨) ===
+    // 🔧 이제 이 함수들은 비헤이비어 트리에서만 제어됨
+    void UpdateGASPSystem(float DeltaTime);  // 비활성화됨
+    void UpdateCombatBehavior(float DeltaTime);  // 비활성화됨
+    void UpdateAlertBehavior(float DeltaTime);  // 비활성화됨
+    void UpdatePatrolBehavior(float DeltaTime);  // 비활성화됨
 
-    // 스페이스 키 입력 처리에 해당하는 AI 상태 업데이트 함수들
-    void UpdateTerritorySearchState(float DeltaTime);       // 영역 탐색 로직 업데이트
-    void UpdateCombatState(float DeltaTime);                // 전투 로직 업데이트
-    void UpdateMovementDirection(float DeltaTime);          // 이동 방향 업데이트
+    // === 블랙보드 동기화 ===
+    UFUNCTION()
+    void SyncEnemyStateWithBlackboard();
+    
+    UFUNCTION()
+    void UpdateTargetDistance();
 
-    // 현재 제어 중인 폰
+    UFUNCTION()
+    void UpdateBlackboardKeys();
+
+    // === 🔧 전투 해제 조건 확인 함수 추가 ===
+    void CheckCombatDisengagementConditions(UBlackboardComponent* blackboardComp);
+
+    // === 현재 제어 중인 액터들 ===
     UPROPERTY(BlueprintReadOnly, Category = "AI")
     APawn* controlledPawn;
 
-    // 현재 목표 영역
+    UPROPERTY(BlueprintReadOnly, Category = "AI")
+    AEnemy* controlledEnemy;
+
     UPROPERTY(BlueprintReadOnly, Category = "AI")
     AOccupiedTerritory* currentTargetTerritory;
 
-    // 전투 관련 변수
+    // === 🔧 상태 변수들 (읽기 전용으로 변경 - 비헤이비어 트리에서만 제어) ===
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "GASP System")
+    bool isInCombat = false;
+
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "GASP System")
+    bool isAlert = false;
+
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "GASP System")
+    bool isPatrolling = true;
+
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "GASP System")
+    bool isBurstFiring = false;
+
+    // === 타겟 추적 변수들 (감지용으로만 사용) ===
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Target Tracking")
+    AActor* currentTarget = nullptr;
+
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Target Tracking")
+    FVector lastKnownTargetLocation;
+
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Target Tracking")
+    float lastTargetSeenTime = 0.0f;
+
+    // === 전투 관련 변수 ===
     UPROPERTY(BlueprintReadOnly, Category = "Combat")
-    bool isAttacking = false;                               // 현재 공격 중인지 여부
+    bool isAttacking = false;
 
     UPROPERTY(BlueprintReadOnly, Category = "Combat")
-    float timeSinceLastAttackDecision = 0.0f;               // 마지막 공격 결정 이후 경과 시간
+    float timeSinceLastAttackDecision = 0.0f;
 
-    // 이동 상태 변수
-    UPROPERTY(BlueprintReadOnly, Category = "AI Movement")
-    bool isMovingToTerritory = false;                       // 영역으로 이동 중인지 여부
+    UPROPERTY(BlueprintReadOnly, Category = "Combat")
+    float timeSinceLastBurstFire = 0.0f;
 
-    UPROPERTY(BlueprintReadOnly, Category = "AI Movement")
-    float timeSinceLastTerritorySearch = 0.0f;              // 마지막 영역 검색 이후 경과 시간
+    // === 🔧 AI 설정 매개변수들에서 사용하지 않는 변수 제거 ===
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "AI Settings")
+    float attackDecisionUpdateInterval = 1.0f;
 
-    // ===================================
-    // AI 설정 매개변수들
-    // ===================================
+    // attackRange, territorySearchInterval, rotationInterpSpeed, burstFireCooldown 제거
 
-    // 전투 관련 설정
-    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "AI|Combat")
-    float attackDecisionUpdateInterval = 1.0f;              // 공격 결정 업데이트 간격
-
-    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "AI|Combat")
-    float attackRange = 500.0f;                            // 공격 범위
-
-    // 이동 관련 설정
-    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "AI|Movement")
-    float territorySearchInterval = 5.0f;                   // 영역 재검색 간격
-
-    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "AI|Movement")
-    float rotationInterpSpeed = 5.0f;                       // 회전 보간 속도
-
-    // 이동 방향 계산 변수 (AllyNPCAI와 동일하게 추가)
-    FVector lastPosition;                          // 이전 위치
-    FVector currentMovementDirection;              // 현재 이동 방향
-    float movementDirectionUpdateInterval = 0.005f; // 방향 업데이트 간격 (0.01f -> 0.005f로 더 자주 업데이트)
-    float timeSinceLastDirectionUpdate;            // 마지막 방향 업데이트 이후 경과 시간
+    // === 타이머 변수들 ===
+    float alertTimer = 0.0f;
+    float combatTimer = 0.0f;
 
 private:
-    // 전투 유틸리티 함수
-    bool IsInAttackRange() const;                           // 공격 가능 거리 확인
+    // === 유틸리티 함수들 ===
+    bool IsInAttackRange() const;
+    bool CanSeeTarget(AActor* Target) const;
 
-    // 내비게이션 헬퍼 함수
-    FVector FindNearestNavigableLocation(FVector targetLocation);
-    bool IsLocationNavigable(FVector location);
+    // === 디버그 정보 ===
+    void DisplayDebugInfo();
+
+    // === 블랙보드 키 이름들 (문자열 최적화) ===
+    static const FName BB_IsInCombat;
+    static const FName BB_IsAlert;
+    static const FName BB_IsBurstFiring;
+    static const FName BB_TargetActor;
+    static const FName BB_LastKnownPlayerLocation;
+    static const FName BB_FireDistance;
+    static const FName BB_SelfActor;
 };

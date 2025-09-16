@@ -2,169 +2,379 @@
 #include "Enemy.h"
 #include "OccupiedTerritory.h"
 
+// AI 및 비헤이비어 트리 관련
+#include "BehaviorTree/BlackboardComponent.h"
+#include "BehaviorTree/BehaviorTree.h"
+#include "BehaviorTree/BehaviorTreeComponent.h"
+
+// 인식 시스템
+#include "Perception/AIPerceptionComponent.h"
+#include "Perception/AISenseConfig_Sight.h"
+
+// 네비게이션 및 이동
+#include "NavigationSystem.h"
+#include "Navigation/PathFollowingComponent.h"
+#include "AITypes.h"
+
+// 엔진 코어
 #include "Engine/World.h"
 #include "Engine/Engine.h"
 #include "Kismet/GameplayStatics.h"
-#include "NavigationSystem.h"
-#include "AITypes.h"
-#include "Navigation/PathFollowingComponent.h"
-#include "Perception/AIPerceptionComponent.h"
-#include "Perception/AISenseConfig_Sight.h"
 #include "GameFramework/Character.h"
 #include "GameFramework/CharacterMovementComponent.h"
+
+// 디버그 및 유틸리티
+#include "DrawDebugHelpers.h"
+
+// 블랙보드 키 이름 상수 정의
+const FName AEnemyAI::BB_IsInCombat(TEXT("IsInCombat"));
+const FName AEnemyAI::BB_IsAlert(TEXT("IsAlert"));
+const FName AEnemyAI::BB_IsBurstFiring(TEXT("IsBurstFiring"));
+const FName AEnemyAI::BB_TargetActor(TEXT("TargetActor"));
+const FName AEnemyAI::BB_LastKnownPlayerLocation(TEXT("LastKnownPlayerLocation"));
+const FName AEnemyAI::BB_FireDistance(TEXT("FireDistance"));
+const FName AEnemyAI::BB_SelfActor(TEXT("SelfActor"));
+
+// 디버그용 콘솔 변수 선언
+static TAutoConsoleVariable<int32> CVarShowEnemyAIDebug(
+    TEXT("ai.ShowEnemyAIDebug"),
+    0,
+    TEXT("Show Enemy AI debug information\n")
+    TEXT("0: Disabled\n")
+    TEXT("1: Enabled"),
+    ECVF_Default
+);
 
 AEnemyAI::AEnemyAI()
 {
     PrimaryActorTick.bCanEverTick = true;
 
-    // AI 인식 컴포넌트 초기화
+    // === AI 인식 컴포넌트 초기화 ===
     AIPerceptionComp = CreateDefaultSubobject<UAIPerceptionComponent>(TEXT("AIPerceptionComponent"));
 
     // 시각 감지 설정
-    UAISenseConfig_Sight* sightConfig = CreateDefaultSubobject<UAISenseConfig_Sight>(TEXT("Sight Config"));
-    sightConfig->SightRadius = 1500.0f;
-    sightConfig->LoseSightRadius = 2000.0f;
-    sightConfig->PeripheralVisionAngleDegrees = 90.0f;
-    sightConfig->DetectionByAffiliation.bDetectEnemies = true;
-    sightConfig->DetectionByAffiliation.bDetectFriendlies = true;
-    sightConfig->DetectionByAffiliation.bDetectNeutrals = true;
+    UAISenseConfig_Sight* sightConfig = CreateDefaultSubobject<UAISenseConfig_Sight>(TEXT("SightConfig"));
+    if (sightConfig)
+    {
+        sightConfig->SightRadius = sightRadius;
+        sightConfig->LoseSightRadius = loseSightRadius;
+        sightConfig->PeripheralVisionAngleDegrees = peripheralVisionAngle;
+        sightConfig->DetectionByAffiliation.bDetectEnemies = true;
+        sightConfig->DetectionByAffiliation.bDetectFriendlies = true;
+        sightConfig->DetectionByAffiliation.bDetectNeutrals = true;
+        sightConfig->SetMaxAge(3.0f);
 
-    AIPerceptionComp->ConfigureSense(*sightConfig);
-    AIPerceptionComp->SetDominantSense(sightConfig->GetSenseImplementation());
+        AIPerceptionComp->ConfigureSense(*sightConfig);
+        AIPerceptionComp->SetDominantSense(sightConfig->GetSenseImplementation());
+    }
 
-    // 변수 초기화
+    // === 변수 초기화 ===
     currentTargetTerritory = nullptr;
     controlledPawn = nullptr;
+    controlledEnemy = nullptr;
+    
+    // TPS Kit GASP 시스템 상태 초기화
+    isInCombat = false;
+    isAlert = false;
+    isPatrolling = true;
+    isBurstFiring = false;
+    
+    // 타겟 추적 초기화
+    currentTarget = nullptr;
+    lastKnownTargetLocation = FVector::ZeroVector;
+    lastTargetSeenTime = 0.0f;
+    
+    // 타이머 초기화
+    alertTimer = 0.0f;
+    combatTimer = 0.0f;
 }
 
 void AEnemyAI::BeginPlay()
 {
     Super::BeginPlay();
 
-    // 필수 컴포넌트 검증
-    if (AIPerceptionComp == nullptr)
+    // === 필수 컴포넌트 검증 ===
+    if (!AIPerceptionComp)
     {
-        GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Red, TEXT("AI Perception Component가 존재하지 않습니다."));
-        
+        UE_LOG(LogTemp, Error, TEXT("EnemyAI: AI Perception Component가 존재하지 않습니다."));
         return;
     }
 
-    // 월드 존재 검증
-    if (GetWorld() == nullptr)
+    if (!GetWorld())
     {
-        GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Red, TEXT("World가 존재하지 않습니다."));
-        
+        UE_LOG(LogTemp, Error, TEXT("EnemyAI: World가 존재하지 않습니다."));
         return;
     }
 
-    // 내비게이션 시스템 검증
+    // === 내비게이션 시스템 검증 ===
     UNavigationSystemV1* navSystem = UNavigationSystemV1::GetCurrent(GetWorld());
-    if (navSystem == nullptr)
+    if (!navSystem)
     {
-        GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Red, TEXT("Navigation System이 존재하지 않습니다."));
-        
-        return;
+        UE_LOG(LogTemp, Warning, TEXT("EnemyAI: Navigation System이 존재하지 않습니다."));
     }
 
-    // 경로 추적 컴포넌트 검증
-    if (GetPathFollowingComponent() == nullptr)
+    // === 경로 추적 컴포넌트 검증 ===
+    if (!GetPathFollowingComponent())
     {
-        GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Red, TEXT("Path Following Component가 존재하지 않습니다."));
-        
-        return;
+        UE_LOG(LogTemp, Warning, TEXT("EnemyAI: Path Following Component가 존재하지 않습니다."));
     }
 
-    // 인식 이벤트 콜백 등록
-    AIPerceptionComp->OnTargetPerceptionUpdated.AddDynamic(this, &AEnemyAI::OnPerceptionUpdated);
+    // === 인식 이벤트 콜백 등록 ===
+    if (AIPerceptionComp)
+    {
+        AIPerceptionComp->OnTargetPerceptionUpdated.AddDynamic(this, &AEnemyAI::OnPerceptionUpdated);
+    }
 
-    
-    GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Green, TEXT("Enemy AI 초기화 완료"));
+    UE_LOG(LogTemp, Log, TEXT("EnemyAI: 초기화 완료"));
 }
 
 void AEnemyAI::Tick(float deltaTime)
 {
     Super::Tick(deltaTime);
 
-    // 매 프레임 상태 업데이트
-    UpdateMovementDirection(deltaTime);                     // 이동 방향 업데이트 - 가장 중요!
-    UpdateTerritorySearchState(deltaTime);                  // 영역 탐색 상태 업데이트
-    UpdateCombatState(deltaTime);                           // 전투 상태 업데이트
+    // === 🔧 이동 관련 코드 제거, 블랙보드 동기화만 유지 ===
+    // 블랙보드 동기화는 비헤이비어 트리가 있을 때만
+    if (BehaviorTree && GetBlackboardComponent())
+    {
+        SyncEnemyStateWithBlackboard();
+        UpdateTargetDistance();
+    }
+
+    // === 디버그 정보 표시 ===
+    DisplayDebugInfo();
 }
 
 void AEnemyAI::OnPossess(APawn* InPawn)
 {
     Super::OnPossess(InPawn);
 
-    // 제어할 폰 참조 가져오기
+    // === 제어할 폰 참조 설정 ===
     controlledPawn = InPawn;
+    controlledEnemy = Cast<AEnemy>(InPawn);
     
-    if (controlledPawn == nullptr)
+    if (!controlledPawn)
     {
-        GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Red, TEXT("EnemyAI: 제어할 폰이 null입니다!"));
+        UE_LOG(LogTemp, Error, TEXT("EnemyAI: 제어할 폰이 null입니다!"));
         return;
     }
 
-    lastPosition = controlledPawn->GetActorLocation();
+    if (!controlledEnemy)
+    {
+        UE_LOG(LogTemp, Warning, TEXT("EnemyAI: 폰이 Enemy 클래스가 아닙니다!"));
+    }
+
+    // === 🔧 이동 관련 초기화 제거 ===
     
-    // 경로 이동 설정
-    if (GetPathFollowingComponent() != nullptr)
+    // === 경로 이동 설정 ===
+    if (GetPathFollowingComponent())
+    {
         GetPathFollowingComponent()->SetAcceptanceRadius(acceptanceRadius);
-   
-    GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Green, TEXT("Enemy AI Possessed Pawn"));
-
-    // 월드 존재 검증 후 타이머 설정
-    if (GetWorld() != nullptr)
-    {
-        // 지연된 초기 이동 (BeginPlay 후에 실행되도록)
-        FTimerHandle InitialMoveTimer;
-
-        GetWorld()->GetTimerManager().SetTimer(
-            InitialMoveTimer,
-            FTimerDelegate::CreateUObject(this, &AEnemyAI::MoveToFriendlyTerritory),
-            1.0f,
-            false
-        );
     }
 
-    // 비헤이비어 트리 초기화
-    if (BehaviorTree != nullptr && blackboardData != nullptr)
+    // === 비헤이비어 트리 시스템 초기화 ===
+    if (BehaviorTree && blackboardData)
     {
-        UBlackboardComponent* blackboardComp = GetBlackboardComponent();
-
-        if (blackboardComp != nullptr)
+        // 🔧 수정된 블랙보드 사용 방법
+        if (UBlackboardComponent* BlackboardComp = GetBlackboardComponent())
         {
-            UseBlackboard(blackboardData, blackboardComp);
-            RunBehaviorTree(BehaviorTree);
+            BlackboardComp->InitializeBlackboard(*blackboardData);
+            UE_LOG(LogTemp, Log, TEXT("EnemyAI: 블랙보드 초기화 완료"));
         }
+        
+        // 블랙보드 초기값 설정
+        UBlackboardComponent* blackboardComp = GetBlackboardComponent();
+        if (blackboardComp)
+        {
+            // 블랙보드 컴포넌트가 없는 경우 생성
+            UseBlackboard(blackboardData, blackboardComp);
+
+            // 기본 블랙보드 값 설정
+            blackboardComp->SetValueAsObject(BB_SelfActor, controlledPawn);
+            blackboardComp->SetValueAsBool(BB_IsInCombat, false);
+            blackboardComp->SetValueAsBool(BB_IsAlert, false);
+            blackboardComp->SetValueAsBool(BB_IsBurstFiring, false);
+            blackboardComp->SetValueAsFloat(BB_FireDistance, 0.0f);
+            
+            UE_LOG(LogTemp, Log, TEXT("EnemyAI: 블랙보드 기본값 설정 완료"));
+        }
+        
+        // 비헤이비어 트리 실행
+        RunBehaviorTree(BehaviorTree);
+        UE_LOG(LogTemp, Log, TEXT("EnemyAI: 비헤이비어 트리 시작"));
     }
+    else
+    {
+        UE_LOG(LogTemp, Warning, TEXT("EnemyAI: BehaviorTree 또는 BlackboardData가 설정되지 않았습니다!"));
+    }
+
+    UE_LOG(LogTemp, Log, TEXT("EnemyAI: Pawn 제어 시작"));
 }
 
 void AEnemyAI::OnUnPossess()
 {
     Super::OnUnPossess();
+    
     controlledPawn = nullptr;
+    controlledEnemy = nullptr;
     currentTargetTerritory = nullptr;
+    currentTarget = nullptr;
+    
+    UE_LOG(LogTemp, Log, TEXT("EnemyAI: Pawn 제어 해제"));
 }
+
+// === TPS Kit GASP 시스템 - 상태 관리 ===
+
+void AEnemyAI::EnterCombatState(AActor* Target)
+{
+    if (!Target || !controlledEnemy) return;
+
+    // === Combat 상태로 전환 ===
+    isInCombat = true;
+    isAlert = false;
+    isPatrolling = false;
+    
+    currentTarget = Target;
+    lastKnownTargetLocation = Target->GetActorLocation();
+    lastTargetSeenTime = GetWorld()->GetTimeSeconds();
+    
+    // === Enemy 객체에 전투 모드 진입 알림 ===
+    controlledEnemy->EnterCombatMode(Target);
+    
+    // === 블랙보드 IsInCombat을 true로 즉시 설정 ===
+    if (UBlackboardComponent* blackboardComp = GetBlackboardComponent())
+    {
+        blackboardComp->SetValueAsBool(BB_IsInCombat, true);
+        blackboardComp->SetValueAsObject(BB_TargetActor, Target);
+        blackboardComp->SetValueAsVector(BB_LastKnownPlayerLocation, Target->GetActorLocation());
+        blackboardComp->SetValueAsBool(BB_IsAlert, false); // Combat 중에는 Alert 해제
+        
+        UE_LOG(LogTemp, Warning, TEXT("EnemyAI: 블랙보드 IsInCombat = true 설정"));
+    }
+    
+    UE_LOG(LogTemp, Warning, TEXT("EnemyAI: Combat 상태 진입 - Target: %s"), *Target->GetName());
+}
+
+void AEnemyAI::EnterAlertState(const FVector& LastKnownLocation)
+{
+    if (!controlledEnemy) return;
+
+    // === Alert 상태로 전환 ===
+    isInCombat = false;
+    isAlert = true;
+    isPatrolling = false;
+    
+    lastKnownTargetLocation = LastKnownLocation;
+    alertTimer = 0.0f;
+    
+    // === 블랙보드 업데이트 ===
+    UpdateBlackboardKeys();
+    
+    UE_LOG(LogTemp, Warning, TEXT("EnemyAI: Alert 상태 진입 - Location: %s"), *LastKnownLocation.ToString());
+}
+
+void AEnemyAI::EnterPatrolState()
+{
+    if (!controlledEnemy) return;
+
+    // === Patrol 상태로 전환 ===
+    isInCombat = false;
+    isAlert = false;
+    isPatrolling = true;
+    
+    currentTarget = nullptr;
+    
+    // === Enemy 객체에 전투 모드 해제 알림 ===
+    if (controlledEnemy->isInCombat)
+    {
+        controlledEnemy->ExitCombatMode();
+    }
+    
+    // === 블랙보드 업데이트 ===
+    UpdateBlackboardKeys();
+    
+    UE_LOG(LogTemp, Log, TEXT("EnemyAI: Patrol 상태 진입"));
+}
+
+void AEnemyAI::ClearAllStates()
+{
+    isInCombat = false;
+    isAlert = false;
+    isPatrolling = true;
+    isBurstFiring = false;
+    
+    currentTarget = nullptr;
+    alertTimer = 0.0f;
+    combatTimer = 0.0f;
+    
+    if (controlledEnemy && controlledEnemy->isInCombat)
+    {
+        controlledEnemy->ExitCombatMode();
+    }
+    
+    UpdateBlackboardKeys();
+    
+    UE_LOG(LogTemp, Log, TEXT("EnemyAI: 모든 상태 초기화"));
+}
+
+// === 상태 확인 함수들 ===
+
+bool AEnemyAI::GetInCombat() const
+{
+    return isInCombat;
+}
+
+bool AEnemyAI::GetAlert() const
+{
+    return isAlert;
+}
+
+bool AEnemyAI::GetPatrolling() const
+{
+    return isPatrolling;
+}
+
+// === TPS Kit GASP 시스템 - 업데이트 함수들 ===
+
+void AEnemyAI::UpdateGASPSystem(float DeltaTime)
+{
+    // === 🔧 완전히 비활성화 - 비헤이비어 트리에서만 제어 ===
+    return;
+}
+
+void AEnemyAI::UpdateCombatBehavior(float DeltaTime)
+{
+    // === 🔧 자동 전투 행동 제거 - 비헤이비어 트리에서만 제어 ===
+    return;
+}
+
+void AEnemyAI::UpdateAlertBehavior(float DeltaTime)
+{
+    // === 🔧 자동 경계 행동 제거 - 비헤이비어 트리에서만 제어 ===
+    return;
+}
+
+void AEnemyAI::UpdatePatrolBehavior(float DeltaTime)
+{
+    // === 🔧 자동 패트롤 완전 제거 - 비헤이비어 트리에서만 제어 ===
+    return;
+}
+
+// === 🔧 완전히 제거된 함수들 ===
+// void AEnemyAI::UpdateMovementDirection(float DeltaTime) - 제거됨
+
+// === 🔧 영역 탐색 및 이동 함수들 제거 ===
 
 AOccupiedTerritory* AEnemyAI::FindNearestFriendlyTerritory()
 {
-    if (GetWorld() == nullptr || controlledPawn == nullptr)
-    {
-        GEngine->AddOnScreenDebugMessage(-1, 3.0f, FColor::Red, TEXT("World 또는 Controlled Pawn이 존재하지 않습니다."));
+    // === 🔧 비헤이비어 트리에서만 호출되도록 제한 ===
+    if (!BehaviorTree || !GetBlackboardComponent()) return nullptr;
+    
+    if (!GetWorld() || !controlledPawn) return nullptr;
 
-        return nullptr;
-    }
-
-    // 모든 AOccupiedTerritory 액터 찾기
     TArray<AActor*> foundActors;
     UGameplayStatics::GetAllActorsOfClass(GetWorld(), AOccupiedTerritory::StaticClass(), foundActors);
 
-    if (foundActors.Num() == 0)
-    {
-        GEngine->AddOnScreenDebugMessage(-1, 3.0f, FColor::Red, TEXT("OccupiedTerritory 액터가 발견되지 않았습니다."));
-
-        return nullptr;
-    }
+    if (foundActors.Num() == 0) return nullptr;
 
     AOccupiedTerritory* nearestFriendlyTerritory = nullptr;
     float shortestDistance = FLT_MAX;
@@ -174,7 +384,7 @@ AOccupiedTerritory* AEnemyAI::FindNearestFriendlyTerritory()
     {
         AOccupiedTerritory* territory = Cast<AOccupiedTerritory>(actor);
 
-        if (territory != nullptr && territory->IsFriendlyTerritory())
+        if (territory && territory->IsFriendlyTerritory())
         {
             float distance = FVector::Dist(currentLocation, territory->GetActorLocation());
 
@@ -186,313 +396,272 @@ AOccupiedTerritory* AEnemyAI::FindNearestFriendlyTerritory()
         }
     }
 
-    if (nearestFriendlyTerritory != nullptr)
-        GEngine->AddOnScreenDebugMessage(-1, 3.0f, FColor::Green,
-            FString::Printf(TEXT("아군 영역 발견: %s (거리: %.2f)"),
-                *nearestFriendlyTerritory->GetActorLocation().ToString(), shortestDistance));
-
-    else
-        GEngine->AddOnScreenDebugMessage(-1, 3.0f, FColor::Red, TEXT("아군 영역을 찾을 수 없습니다."));
-
     return nearestFriendlyTerritory;
 }
 
-void AEnemyAI::MoveToFriendlyTerritory()
+// === 🔧 MoveToFriendlyTerritory, MoveToTargetLocation, OnMoveCompleted 제거 ===
+
+// === 블랙보드 동기화 함수들 ===
+
+void AEnemyAI::SyncEnemyStateWithBlackboard()
 {
-    // 이미 이동 중이면 무시
-    if (isMovingToTerritory)
-    {
-        GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::Orange, TEXT("이미 영역으로 이동 중입니다."));
+    // === 🔧 비헤이비어 트리가 없으면 블랙보드 동기화 안함 ===
+    UBlackboardComponent* blackboardComp = GetBlackboardComponent();
+    if (!blackboardComp || !controlledEnemy || !BehaviorTree) return;
 
-        return;
-    }
+    // === 🔧 전투 해제 조건 확인 ===
+    CheckCombatDisengagementConditions(blackboardComp);
 
-    AOccupiedTerritory* targetTerritory = FindNearestFriendlyTerritory();
-    if (targetTerritory != nullptr)
-    {
-        currentTargetTerritory = targetTerritory;
-        MoveToTargetLocation(targetTerritory->GetActorLocation());
-        
-        GEngine->AddOnScreenDebugMessage(-1, 3.0f, FColor::Blue, TEXT("아군 영역으로 이동 시작"));
-    }
-}
-
-void AEnemyAI::MoveToTargetLocation(FVector targetLocation)
-{
-    if (controlledPawn == nullptr)
-    {
-        GEngine->AddOnScreenDebugMessage(-1, 3.0f, FColor::Red, TEXT("제어할 Pawn이 존재하지 않습니다."));
-
-        return;
-    }
-
-    FVector currentLocation = controlledPawn->GetActorLocation();
-
-    GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::Yellow,
-        FString::Printf(TEXT("현재 위치: %s -> 목표 위치: %s"),
-            *currentLocation.ToString(), *targetLocation.ToString()));
-
-    UNavigationSystemV1* navSystem = UNavigationSystemV1::GetCurrent(GetWorld());
-    if (navSystem == nullptr)
-    {
-        GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Red, TEXT("Navigation System을 찾을 수 없습니다."));
-
-        return;
-    }
-
-    // 목표 위치가 내비게이션 가능한지 확인
-    FVector navigableLocation = FindNearestNavigableLocation(targetLocation);
-
-    if (navigableLocation != FVector::ZeroVector)
-    {
-        // 이동 요청 설정
-        FAIMoveRequest moveRequest;
-        moveRequest.SetGoalLocation(navigableLocation);
-        moveRequest.SetAcceptanceRadius(acceptanceRadius);
-        moveRequest.SetUsePathfinding(true);
-        moveRequest.SetAllowPartialPath(true);
-        moveRequest.SetProjectGoalLocation(true);
-
-        // 이동 요청 실행
-        FPathFollowingRequestResult result = MoveTo(moveRequest);
-
-        if (result.Code == EPathFollowingRequestResult::RequestSuccessful)
-        {
-            isMovingToTerritory = true;
-
-            float distance = FVector::Dist(currentLocation, navigableLocation);
-
-            GEngine->AddOnScreenDebugMessage(-1, 3.0f, FColor::Green,
-                FString::Printf(TEXT("이동 요청 성공! 거리: %.2f"), distance));
-        }
-
-        else
-            GEngine->AddOnScreenDebugMessage(-1, 3.0f, FColor::Red, TEXT("이동 요청 실패!"));
-    }
-
-    else
-        GEngine->AddOnScreenDebugMessage(-1, 3.0f, FColor::Red, TEXT("이동 가능한 위치를 찾을 수 없습니다."));
-}
-
-void AEnemyAI::OnMoveCompleted(FAIRequestID RequestID, const FPathFollowingResult& Result)
-{
-    Super::OnMoveCompleted(RequestID, Result);
-
-    isMovingToTerritory = false;
-
-    if (Result.IsSuccess())
-    {
-        GEngine->AddOnScreenDebugMessage(-1, 3.0f, FColor::Green, TEXT("목표 위치에 성공적으로 도달했습니다!"));
-
-        // 목표 영역에 도달했으면 다음 행동 결정
-        if (currentTargetTerritory != nullptr)
-            GEngine->AddOnScreenDebugMessage(-1, 3.0f, FColor::Cyan, TEXT("아군 영역 도달 - 전투 준비!"));
-    }
-
-    else
-    {
-        GEngine->AddOnScreenDebugMessage(-1, 3.0f, FColor::Red, TEXT("목표 위치 도달 실패!"));
-
-        // 이동 실패 시 타이머를 사용하여 지연된 재시도 (무한 재귀 방지)
-        if (GetWorld() != nullptr)
-        {
-            FTimerHandle RetryMoveTimer;
-            GetWorld()->GetTimerManager().SetTimer(
-                RetryMoveTimer,
-                FTimerDelegate::CreateUObject(this, &AEnemyAI::MoveToFriendlyTerritory),
-                2.0f,  // 2초 후 재시도
-                false
-            );
-        }
-    }
-}
-
-void AEnemyAI::UpdateTerritorySearchState(float DeltaTime)
-{
-    timeSinceLastTerritorySearch += DeltaTime;
+    // === Enemy → Blackboard 동기화 ===
+    blackboardComp->SetValueAsBool(BB_IsInCombat, controlledEnemy->isInCombat);
+    blackboardComp->SetValueAsBool(BB_IsAlert, isAlert);
+    blackboardComp->SetValueAsBool(BB_IsBurstFiring, controlledEnemy->isBurstFiring);
     
-    // 주기적으로 새로운 영역 탐색 (현재 이동 중이 아닐 때만)
-    if (!isMovingToTerritory && timeSinceLastTerritorySearch >= territorySearchInterval)
+    // === 타겟 정보 업데이트 ===
+    if (controlledEnemy->currentTarget)
     {
-        timeSinceLastTerritorySearch = 0.0f;
-        
-        // 현재 목표가 없거나 더 가까운 영역이 있는지 확인
-        AOccupiedTerritory* nearestTerritory = FindNearestFriendlyTerritory();
-
-        if (nearestTerritory != nullptr && nearestTerritory != currentTargetTerritory)
-            MoveToFriendlyTerritory();
+        blackboardComp->SetValueAsObject(BB_TargetActor, controlledEnemy->currentTarget);
+        blackboardComp->SetValueAsVector(BB_LastKnownPlayerLocation, controlledEnemy->currentTarget->GetActorLocation());
+    }
+    else if (!lastKnownTargetLocation.IsZero())
+    {
+        blackboardComp->SetValueAsVector(BB_LastKnownPlayerLocation, lastKnownTargetLocation);
     }
 }
 
-void AEnemyAI::UpdateCombatState(float DeltaTime)
+// === 🔧 새로 추가된 전투 해제 조건 확인 함수 ===
+void AEnemyAI::CheckCombatDisengagementConditions(UBlackboardComponent* blackboardComp)
 {
-    timeSinceLastAttackDecision += DeltaTime;
-    
-    if (timeSinceLastAttackDecision < attackDecisionUpdateInterval)
-        return;
+    if (!blackboardComp || !controlledPawn) return;
+
+    // 현재 전투 중인지 확인
+    bool currentIsInCombat = blackboardComp->GetValueAsBool(BB_IsInCombat);
+    if (!currentIsInCombat) return;
+
+    // FireDistance 확인
+    float fireDistance = blackboardComp->GetValueAsFloat(BB_FireDistance);
+    if (fireDistance < 800.0f) return;
+
+    // 목표 이동 위치 확인 (LastKnownPlayerLocation을 이동 목표로 가정)
+    FVector moveTargetLocation = blackboardComp->GetValueAsVector(BB_LastKnownPlayerLocation);
+    if (moveTargetLocation.IsZero()) return;
+
+    // 현재 위치에서 목표 이동 위치까지의 거리 확인
+    float distanceToMoveTarget = FVector::Dist(controlledPawn->GetActorLocation(), moveTargetLocation);
+
+    // 조건 확인: FireDistance >= 800 && 이동 목표까지 거리 <= 500
+    if (fireDistance >= 800.0f && distanceToMoveTarget <= 500.0f)
+    {
+        // 전투 상태 해제
+        isInCombat = false;
         
-    timeSinceLastAttackDecision = 0.0f;
-
-    // 공격 범위 내에 있으면 공격, 아니면 공격 중지
-    if (IsInAttackRange())
-    {
-        if (!isAttacking)
-            StartAttack();
-    }
-
-    else
-    {
-        if (isAttacking)
-            StopAttack();
-    }
-}
-
-void AEnemyAI::UpdateMovementDirection(float DeltaTime)
-{
-    if (!controlledPawn)
-        return;
-
-    // 방향 업데이트 타이머 증가
-    timeSinceLastDirectionUpdate += DeltaTime;
-
-    // 지정된 간격으로 방향 업데이트 (더 자주 업데이트)
-    if (timeSinceLastDirectionUpdate >= movementDirectionUpdateInterval)
-    {
-        timeSinceLastDirectionUpdate = 0.0f;
-
-        // 현재 위치
-        FVector currentLocation = controlledPawn->GetActorLocation();
-
-        // 이동 방향 계산 (이전 위치와 현재 위치의 차이)
-        FVector movementDelta = currentLocation - lastPosition;
-        movementDelta.Z = 0.0f; // 수직 이동 무시
-
-        // 이동 거리가 충분한 경우에만 방향 업데이트
-        if (movementDelta.SizeSquared() > 1.0f) // 1cm 이상 이동한 경우
+        // Enemy 객체도 전투 모드 해제
+        if (controlledEnemy && controlledEnemy->isInCombat)
         {
-            currentMovementDirection = movementDelta.GetSafeNormal();
-        }
-        else
-        {
-            // 정지 상태
-            currentMovementDirection = FVector::ZeroVector;
+            controlledEnemy->ExitCombatMode();
         }
 
-        // 이전 위치 업데이트
-        lastPosition = currentLocation;
+        // 블랙보드 즉시 업데이트
+        blackboardComp->SetValueAsBool(BB_IsInCombat, false);
+        blackboardComp->SetValueAsBool(BB_IsAlert, true); // Alert 상태로 전환
 
-        // Enemy 캐릭터에 이동 상태 전달
-        AEnemy* enemy = Cast<AEnemy>(controlledPawn);
-        if (enemy)
-        {
-            // AI가 계산한 이동 방향을 Enemy에 전달
-            bool isRunning = currentMovementDirection.SizeSquared() > 0.5f; // 빠르게 이동 중인지 판단
-            enemy->UpdateMovementState(isRunning, currentMovementDirection);
-            
-            // 디버그 정보 출력
-            GEngine->AddOnScreenDebugMessage(-1, 0.1f, FColor::Orange,
-                FString::Printf(TEXT("Enemy AI MovementDirection: %s, Running: %s"),
-                    *currentMovementDirection.ToString(), isRunning ? TEXT("Yes") : TEXT("No")));
-        }
+        UE_LOG(LogTemp, Warning, TEXT("EnemyAI: 전투 해제 조건 충족 - FireDistance: %.1f, MoveDistance: %.1f"), 
+            fireDistance, distanceToMoveTarget);
     }
 }
+
+// === 전투 관련 함수들 ===
 
 void AEnemyAI::StartAttack()
 {
-    isAttacking = true;
+    if (!controlledEnemy) return;
     
-    GEngine->AddOnScreenDebugMessage(-1, 1.0f, FColor::Red, TEXT("적 공격 시작!"));
+    isAttacking = true;
+    controlledEnemy->StartGunFiring();
+    
+    UE_LOG(LogTemp, Warning, TEXT("EnemyAI: 공격 시작"));
 }
 
 void AEnemyAI::StopAttack()
 {
+    if (!controlledEnemy) return;
+    
     isAttacking = false;
+    controlledEnemy->StopGunFiring();
     
-    
-    GEngine->AddOnScreenDebugMessage(-1, 1.0f, FColor::Yellow, TEXT("적 공격 중지!"));
+    UE_LOG(LogTemp, Log, TEXT("EnemyAI: 공격 중지"));
 }
 
-bool AEnemyAI::IsInAttackRange() const
+void AEnemyAI::StartBurstFire()
 {
-    // 현재 목표 영역과의 거리가 공격 범위 내인지 확인
-    if (controlledPawn == nullptr || currentTargetTerritory == nullptr)
-        return false;
-        
-    const float distanceToTarget = FVector::Dist(
-        controlledPawn->GetActorLocation(), 
-        currentTargetTerritory->GetActorLocation()
-    );
+    if (!controlledEnemy || isBurstFiring) return;
     
-    return distanceToTarget < attackRange;
+    isBurstFiring = true;
+    controlledEnemy->StartBurstFire();
+    
+    UE_LOG(LogTemp, Warning, TEXT("EnemyAI: 버스트 파이어 시작"));
 }
 
-FVector AEnemyAI::FindNearestNavigableLocation(FVector targetLocation)
+void AEnemyAI::StopBurstFire()
 {
-    UNavigationSystemV1* navSystem = UNavigationSystemV1::GetCurrent(GetWorld());
-
-    if (navSystem == nullptr) 
-        return FVector::ZeroVector;
-
-    FNavLocation navLocation;
+    if (!controlledEnemy || !isBurstFiring) return;
     
-    // 1. 먼저 목표 위치가 NavMesh에 있는지 확인
-    if (navSystem->ProjectPointToNavigation(targetLocation, navLocation, FVector(100.0f, 100.0f, 100.0f)))
-    {
-        GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::Green,
-            FString::Printf(TEXT("목표 위치가 이동 가능합니다: %s"), *navLocation.Location.ToString()));
-
-        return navLocation.Location;
-    }
-
-    // 2. 목표 위치 주변에서 가장 가까운 NavMesh 위치 찾기
-    TArray<float> searchRadii = {200.0f, 500.0f, 1000.0f, 2000.0f};
+    isBurstFiring = false;
+    controlledEnemy->StopBurstFire();
     
-    for (float radius : searchRadii)
-    {
-        if (navSystem->GetRandomReachablePointInRadius(targetLocation, radius, navLocation))
-        {
-            GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::Blue,
-                FString::Printf(TEXT("반경 %.0f에서 이동 가능한 위치 발견: %s"),
-                    radius, *navLocation.Location.ToString()));
-
-            return navLocation.Location;
-        }
-    }
-
-    // 3. 현재 위치에서 목표 방향으로 가장 가까운 NavMesh 위치 찾기
-    if (controlledPawn != nullptr)
-    {
-        FVector currentLocation = controlledPawn->GetActorLocation();
-
-        if (navSystem->GetRandomReachablePointInRadius(currentLocation, 1000.0f, navLocation))
-        {
-            GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::Orange,
-                FString::Printf(TEXT("현재 위치에서 대체 위치로 이동: %s"), *navLocation.Location.ToString()));
-
-            return navLocation.Location;
-        }
-    }
-
-    return FVector::ZeroVector;
+    UE_LOG(LogTemp, Log, TEXT("EnemyAI: 버스트 파이어 중지"));
 }
 
-bool AEnemyAI::IsLocationNavigable(FVector location)
-{
-    UNavigationSystemV1* navSystem = UNavigationSystemV1::GetCurrent(GetWorld());
-
-    if (navSystem == nullptr) 
-        return false;
-
-    FNavLocation navLocation;
-    return navSystem->ProjectPointToNavigation(location, navLocation, FVector(50.0f, 50.0f, 50.0f));
-}
+// === 인식 시스템 ===
 
 void AEnemyAI::OnPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus)
 {
-    // AI 인식 처리 (필요에 따라 구현)
-    if (Stimulus.WasSuccessfullySensed())
+    if (!Actor || !controlledEnemy) return;
+
+    // === 플레이어 감지 처리만 유지 - 상태 변경은 블랙보드를 통해서만 ===
+    if (APawn* detectedPawn = Cast<APawn>(Actor))
     {
-        GEngine->AddOnScreenDebugMessage(-1, 1.0f, FColor::Purple, 
-            FString::Printf(TEXT("적 AI가 감지함: %s"), *Actor->GetName()));
+        if (detectedPawn->IsPlayerControlled())
+        {
+            if (Stimulus.WasSuccessfullySensed())
+            {
+                // === 🔧 비헤이비어 트리가 자동으로 전투 모드 진입하도록 블랙보드 설정 ===
+                if (UBlackboardComponent* blackboardComp = GetBlackboardComponent())
+                {
+                    blackboardComp->SetValueAsObject(BB_TargetActor, Actor);
+                    blackboardComp->SetValueAsVector(BB_LastKnownPlayerLocation, Actor->GetActorLocation());
+                    
+                    float distance = FVector::Dist(controlledPawn->GetActorLocation(), Actor->GetActorLocation());
+                    blackboardComp->SetValueAsFloat(BB_FireDistance, distance);
+                    
+                    // 🔧 IsInCombat을 true로 설정하여 Combat Sequence 활성화
+                    blackboardComp->SetValueAsBool(BB_IsInCombat, true);
+                    blackboardComp->SetValueAsBool(BB_IsAlert, false); // Alert 해제
+                    
+                    UE_LOG(LogTemp, Warning, TEXT("EnemyAI: 전투 모드 활성화 - Distance: %.1f"), distance);
+                }
+                
+                // Enemy 객체도 전투 모드로 설정
+                if (controlledEnemy && !controlledEnemy->IsInCombat())
+                {
+                    controlledEnemy->EnterCombatMode(Actor);
+                }
+            }
+            else
+            {
+                // === 플레이어 시야에서 사라짐 ===
+                if (UBlackboardComponent* blackboardComp = GetBlackboardComponent())
+                {
+                    blackboardComp->SetValueAsObject(BB_TargetActor, nullptr);
+                    blackboardComp->SetValueAsBool(BB_IsInCombat, false);
+                    blackboardComp->SetValueAsBool(BB_IsAlert, true); // Alert 모드로 전환
+                    blackboardComp->SetValueAsFloat(BB_FireDistance, 9999.0f);
+                }
+            }
+        }
+    }
+}
+
+// === 유틸리티 함수들 ===
+
+bool AEnemyAI::CanSeeTarget(AActor* Target) const
+{
+    if (!Target || !controlledPawn || !AIPerceptionComp) return false;
+    
+    FActorPerceptionBlueprintInfo perceptionInfo;
+    AIPerceptionComp->GetActorsPerception(Target, perceptionInfo);
+    
+    for (const FAIStimulus& stimulus : perceptionInfo.LastSensedStimuli)
+    {
+        if (stimulus.WasSuccessfullySensed())
+        {
+            return true;
+        }
+    }
+    
+    return false;
+}
+
+void AEnemyAI::DisplayDebugInfo()
+{
+    if (CVarShowEnemyAIDebug.GetValueOnGameThread() == 0 || !controlledEnemy) return;
+        
+    FString stateInfo;
+    if (isInCombat)
+        stateInfo = TEXT("COMBAT");
+    else if (isAlert)
+        stateInfo = FString::Printf(TEXT("ALERT (%.1fs)"), alertTimer);
+    else
+        stateInfo = TEXT("PATROL");
+        
+    if (isBurstFiring)
+        stateInfo += TEXT(" | FIRING");
+        
+    FString targetInfo = TEXT("No Target");
+    if (currentTarget)
+    {
+        float distance = FVector::Dist(controlledEnemy->GetActorLocation(), currentTarget->GetActorLocation());
+        targetInfo = FString::Printf(TEXT("%s (%.0f)"), *currentTarget->GetName(), distance);
+    }
+    
+    FVector location = controlledEnemy->GetActorLocation() + FVector(0, 0, 100);
+    DrawDebugString(GetWorld(), location, stateInfo, nullptr, FColor::White, 0.0f, true);
+    DrawDebugString(GetWorld(), location + FVector(0, 0, 15), targetInfo, nullptr, FColor::Yellow, 0.0f, true);
+}
+
+void AEnemyAI::UpdateTargetDistance()
+{
+    UBlackboardComponent* blackboardComp = GetBlackboardComponent();
+    if (!blackboardComp || !controlledPawn) return;
+
+    // 현재 타겟 가져오기
+    AActor* target = Cast<AActor>(blackboardComp->GetValueAsObject(BB_TargetActor));
+    
+    if (target)
+    {
+        // 타겟과의 거리 계산
+        float distance = FVector::Dist(controlledPawn->GetActorLocation(), target->GetActorLocation());
+        blackboardComp->SetValueAsFloat(BB_FireDistance, distance);
+    }
+    else
+    {
+        // 타겟이 없으면 매우 큰 값으로 설정
+        blackboardComp->SetValueAsFloat(BB_FireDistance, 9999.0f);
+    }
+}
+
+void AEnemyAI::UpdateBlackboardKeys()
+{
+    UBlackboardComponent* blackboardComp = GetBlackboardComponent();
+    if (!blackboardComp) return;
+
+    // 현재 상태를 블랙보드에 동기화
+    blackboardComp->SetValueAsBool(BB_IsInCombat, isInCombat);
+    blackboardComp->SetValueAsBool(BB_IsAlert, isAlert);
+    blackboardComp->SetValueAsBool(BB_IsBurstFiring, isBurstFiring);
+    
+    // 타겟 정보 업데이트
+    if (currentTarget)
+    {
+        blackboardComp->SetValueAsObject(BB_TargetActor, currentTarget);
+        blackboardComp->SetValueAsVector(BB_LastKnownPlayerLocation, currentTarget->GetActorLocation());
+        
+        // 타겟과의 거리도 업데이트
+        if (controlledPawn)
+        {
+            float distance = FVector::Dist(controlledPawn->GetActorLocation(), currentTarget->GetActorLocation());
+            blackboardComp->SetValueAsFloat(BB_FireDistance, distance);
+        }
+    }
+    else if (!lastKnownTargetLocation.IsZero())
+    {
+        blackboardComp->SetValueAsVector(BB_LastKnownPlayerLocation, lastKnownTargetLocation);
+        blackboardComp->SetValueAsFloat(BB_FireDistance, 9999.0f);
+    }
+    
+    // Self Actor 설정 (필요한 경우)
+    if (controlledPawn)
+    {
+        blackboardComp->SetValueAsObject(BB_SelfActor, controlledPawn);
     }
 }
