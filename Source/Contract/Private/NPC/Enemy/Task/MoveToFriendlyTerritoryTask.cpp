@@ -1,6 +1,4 @@
-﻿// Fill out your copyright notice in the Description page of Project Settings.
-
-#include "MoveToFriendlyTerritoryTask.h"
+﻿#include "MoveToFriendlyTerritoryTask.h"
 #include "BehaviorTree/BehaviorTreeComponent.h"
 #include "BehaviorTree/BlackboardComponent.h"
 #include "AIController.h"
@@ -42,7 +40,7 @@ UMoveToFriendlyTerritoryTask::UMoveToFriendlyTerritoryTask()
     
     // === 기본값 설정 ===
     territoryType = EFriendlyTerritoryType::SpawnPoint;
-    shouldAbortOnCombat = true;  // 🔧 기본적으로 전투 시 중단
+    shouldAbortOnCombat = true;
     acceptanceRadius = 150.0f;
     maxSearchRadius = 2000.0f;
     minSafeDistance = 800.0f;
@@ -128,6 +126,7 @@ void UMoveToFriendlyTerritoryTask::TickTask(UBehaviorTreeComponent& ownerComp, u
         GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red,
             TEXT("Error (NullAIController, MoveToFriendlyTerritoryTask.cpp) : AIController가 없습니다!"));
         FinishLatentTask(ownerComp, EBTNodeResult::Failed);
+
         return;
     }
     
@@ -138,6 +137,7 @@ void UMoveToFriendlyTerritoryTask::TickTask(UBehaviorTreeComponent& ownerComp, u
         GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red,
             TEXT("Error (NullPawn, MoveToFriendlyTerritoryTask.cpp) : ControlledPawn이 없습니다!"));
         FinishLatentTask(ownerComp, EBTNodeResult::Failed);
+
         return;
     }
     
@@ -148,11 +148,13 @@ void UMoveToFriendlyTerritoryTask::TickTask(UBehaviorTreeComponent& ownerComp, u
         if (blackboardComp)
         {
             bool isInCombat = blackboardComp->GetValueAsBool(TEXT("IsInCombat"));
+
             if (isInCombat)
             {
                 GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Red,
                     TEXT("MoveToFriendlyTerritoryTask: 전투 상태 감지로 인한 태스크 중단!"));
                 FinishLatentTask(ownerComp, EBTNodeResult::Aborted);
+
                 return;
             }
         }
@@ -168,6 +170,7 @@ void UMoveToFriendlyTerritoryTask::TickTask(UBehaviorTreeComponent& ownerComp, u
         GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red,
             FString::Printf(TEXT("Error (MaxMoveTimeExceeded, MoveToFriendlyTerritoryTask.cpp) : 최대 이동 시간 초과 (%.2fs)"), elapsedTime));
         FinishLatentTask(ownerComp, EBTNodeResult::Failed);
+
         return;
     }
     
