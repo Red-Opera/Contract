@@ -12,10 +12,12 @@ public class Contract : ModuleRules
 
 		PrivateDependencyModuleNames.AddRange(new string[] { "Slate", "SlateCore" });
 
-        // Uncomment if you are using Slate UI
-        // PrivateDependencyModuleNames.AddRange(new string[] { "Slate", "SlateCore" });
-
-        // Uncomment if you are using online features
-        // PrivateDependencyModuleNames.Add("OnlineSubsystem");
+        PublicIncludePaths.Add("Contract/Public");
+        PublicIncludePaths.Add("Contract/Public/NPC");
+        PublicIncludePaths.Add("Contract/Public/NPC/Enemy");
+        PublicIncludePaths.Add("Contract/Public/NPC/Enemy/Task");
+        PublicIncludePaths.Add("Contract/Public/Player");
+        PublicIncludePaths.Add("Contract/Public/Player/Item");
+        PublicIncludePaths.Add("Contract/Public/Quest");
     }
 }

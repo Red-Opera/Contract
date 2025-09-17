@@ -1,0 +1,39 @@
+AK-47 총 모델 : https://sketchfab.com/3d-models/ak47-831519a097d84e079fd8bc4b15e5b57d
+총 화염 이미지 : https://mycreativefx.com/details/mkfx-107-free-muzzle-flash-front-4k
+총 화염 이미지 : https://mycreativefx.com/details/mkfx-105-free-muzzle-flash-4k
+7.62mm 탄 : https://sketchfab.com/3d-models/76251mm-nato-cartridges-pack-1b07500d973b4a2ba4c0ebd5c8a81540
+5.56mm 탄 : https://sketchfab.com/3d-models/ammo-556-x-45mm-bullet-31e23f83e6614940ad44e6a3eb1bea13
+9mm 탄 : https://sketchfab.com/3d-models/9mm-luger-09e4305688584035bde95f302969f527
+9mm 총알 박스 : https://sketchfab.com/3d-models/ammo-box-9mm-0d7999325e6d4007b17e6c57e9464bdb
+5.56mm 총알 박스 : https://sketchfab.com/3d-models/ammo-box-556x45-74c812129b5d44b08752f2134ee55a61
+7mm 총알 박스 : https://sketchfab.com/3d-models/assault-rifle-ammo-box-remake-0e880a3c2cfd4ea9a4891a81f621733b
+AK-74 총 : https://sketchfab.com/3d-models/ak-74-wooden-furniture-gameready-free-87a76b087e044b60ba9e9bf7ae814fb6
+Scar L 총 : https://sketchfab.com/3d-models/scar-l-assault-rifles-85872c59d11d4616b695e167dc5680f8
+AK101 총 : https://sketchfab.com/3d-models/low-poly-ak-101-398b65a971b54b529ec61eac5a5144c0
+AUG 총 : https://sketchfab.com/3d-models/aug-8c976dec8f834784a6c77f77cf7fca93
+FN Fal 총 : https://sketchfab.com/3d-models/fn-fal-1fb2407403fd4681a9f047d64304e619
+MK2 총 : https://sketchfab.com/3d-models/9mm-pistol-43bc09f5aace4346a8a2b6e1580fc03f
+B&T VP9 총 : https://sketchfab.com/3d-models/welrod-bt-vp9veterinary-pistol-hipoly-3b92b771bdf747b5b8dd3aa188b182bd
+CZ 75 TS Czechmate 총 : https://sketchfab.com/3d-models/game-ready-cz-75-ts-czechmate-455fc253735b4dd7a072fb64ae816ef6
+수류탄 : https://sketchfab.com/3d-models/grenade-83d12630c851471788ffc8ad920552bc
+화염병 : https://sketchfab.com/3d-models/molotov-cocktail-d78c0bfaf7e2448cbd98a485ab079ad2
+돈 : https://sketchfab.com/3d-models/1e4q6cia46sg-money-5727450a953b4cecb18579f05534c72d
+폭파 이펙트 : https://www.fab.com/listings/ac2818b3-7d35-4cf5-a1af-cbf8ff5c61c1
+힐 팩 : https://sketchfab.com/3d-models/health-packs-321f384be7374e2d949c09d2d4076f02
+코인 UI 이미지 : https://iconduck.com/icons/313561/gold-coin
+경험치 이미지 : https://opengameart.org/content/fantasy-xp-icon-animated
+퀘스트 세부 내용 폰트 : http://uhbeefont.com/font/w/UhBeeZIGLE.html
+비 오는 소리 : https://freesound.org/people/mshahen/sounds/242894/
+가까운 번개 소리 : https://freesound.org/people/Erdie/sounds/24003/
+번개 소리 : https://freesound.org/people/BlueDelta/sounds/446753/
+수류탄 소리 : https://freesound.org/people/unfa/sounds/609587/
+불타는 소리 : https://freesound.org/people/Dynamicell/sounds/17548/
+수류탄 까는 소리 : https://freesound.org/people/MultiMax2121/sounds/156896/
+화염병 깨지는 소리 : https://freesound.org/people/Zeinel/sounds/483363/
+화염병 던지는 소리 : https://freesound.org/people/MrGungus/sounds/766542/
+ScarL 총 소리 : https://freesound.org/people/seanmorrissey96/sounds/509437/
+AK-74 총 소리 : https://freesound.org/people/duesto/sounds/156073/
+라이플 총 장전 소리 : https://freesound.org/people/ser%C3%B8t%C5%8Dnin/sounds/674742/
+권총 장전 소리 :  https://freesound.org/people/GFL7/sounds/276959/
+CZ 75 TS 총 소리 : https://freesound.org/people/Shades/sounds/37236/
+빈 탄창 소리 : https://freesound.org/people/michorvath/sounds/427603/
