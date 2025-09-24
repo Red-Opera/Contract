@@ -1,23 +1,17 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
 #include "InvestigateLastKnownPositionTask.h"
+#include "AIController.h"
+#include "AITypes.h"
 #include "BehaviorTree/BehaviorTreeComponent.h"
 #include "BehaviorTree/BlackboardComponent.h"
-#include "AIController.h"
+#include "DrawDebugHelpers.h"
+#include "Enemy.h"
+#include "Engine/World.h"
 #include "GameFramework/Pawn.h"
 #include "GameFramework/Character.h"
 #include "GameFramework/CharacterMovementComponent.h"
-#include "Engine/World.h"
-#include "NavigationSystem.h"
 #include "Kismet/KismetMathLibrary.h"
-#include "DrawDebugHelpers.h"
-
-// 🔧 AI 관련 헤더 추가
-#include "AITypes.h"
+#include "NavigationSystem.h"
 #include "Navigation/PathFollowingComponent.h"
-
-// Enemy 클래스 포함
-#include "Enemy.h"
 
 UInvestigateLastKnownPositionTask::UInvestigateLastKnownPositionTask()
 {
@@ -35,182 +29,205 @@ UInvestigateLastKnownPositionTask::UInvestigateLastKnownPositionTask()
     TargetActorKey.AddObjectFilter(this, GET_MEMBER_NAME_CHECKED(UInvestigateLastKnownPositionTask, TargetActorKey), AActor::StaticClass());
     IsAlertKey.AddBoolFilter(this, GET_MEMBER_NAME_CHECKED(UInvestigateLastKnownPositionTask, IsAlertKey));
     
+    // 🔧 전투 상태 블랙보드 키 추가
+    isInCombatKey.AddBoolFilter(this, GET_MEMBER_NAME_CHECKED(UInvestigateLastKnownPositionTask, isInCombatKey));
+    
     // === 기본값 설정 ===
     AcceptanceRadius = 100.0f;
-    InvestigationDuration = 8.0f;
-    AdditionalSearchPoints = 3;
-    SearchRadius = 300.0f;
-    WaitTimeAtSearchPoint = 2.0f;
-    MaxExecutionTime = 30.0f;
-    MovementSpeed = 300.0f;
-    bStopOnTargetFound = true;
-    bClearAlertOnFailure = true;
+    investigationDuration = 8.0f;
+    additionalSearchPoints = 3;
+    searchRadius = 300.0f;
+    waitTimeAtSearchPoint = 2.0f;
+    maxExecutionTime = 30.0f;
+    movementSpeed = 300.0f;
+    isStopOnTargetFound = true;
+    isClearAlertOnFailure = true;
+    combatClearTime = 10.0f;
 }
 
 EBTNodeResult::Type UInvestigateLastKnownPositionTask::ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory)
 {
     // === 메모리 초기화 ===
-    FInvestigateLastKnownPositionTaskMemory* TaskMemory = reinterpret_cast<FInvestigateLastKnownPositionTaskMemory*>(NodeMemory);
-    TaskMemory->Initialize();
-    
+    FInvestigateLastKnownPositionTaskMemory* taskMemory = reinterpret_cast<FInvestigateLastKnownPositionTaskMemory*>(NodeMemory);
+    taskMemory->Initialize();
+
     // === 필수 컴포넌트 확인 ===
-    AAIController* AIController = OwnerComp.GetAIOwner();
-    if (!AIController)
+    AAIController* aiController = OwnerComp.GetAIOwner();
+
+    if (aiController == nullptr)
     {
-        UE_LOG(LogTemp, Warning, TEXT("InvestigateLastKnownPositionTask: AI Controller가 없습니다!"));
+        GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Error (NullAIController, InvestigateLastKnownPositionTask.cpp) : AI Controller가 없습니다!"));
+
         return EBTNodeResult::Failed;
     }
-    
-    APawn* ControlledPawn = AIController->GetPawn();
-    if (!ControlledPawn)
+
+    APawn* controlledPawn = aiController->GetPawn();
+    if (controlledPawn == nullptr)
     {
-        UE_LOG(LogTemp, Warning, TEXT("InvestigateLastKnownPositionTask: 제어할 Pawn이 없습니다!"));
+        GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red,
+            TEXT("Error (NullPawn, InvestigateLastKnownPositionTask.cpp) : 제어할 Pawn이 없습니다!"));
+
         return EBTNodeResult::Failed;
     }
-    
-    UBlackboardComponent* BlackboardComp = OwnerComp.GetBlackboardComponent();
-    if (!BlackboardComp)
+
+    UBlackboardComponent* blackboardComp = OwnerComp.GetBlackboardComponent();
+    if (blackboardComp == nullptr)
     {
-        UE_LOG(LogTemp, Warning, TEXT("InvestigateLastKnownPositionTask: Blackboard Component가 없습니다!"));
+        GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Error (NullBlackboard, InvestigateLastKnownPositionTask.cpp) : Blackboard Component가 없습니다!"));
+
         return EBTNodeResult::Failed;
     }
-    
+
     // === 현재 타겟이 있는지 확인 ===
     if (HasCurrentTarget(OwnerComp))
-    {
-        UE_LOG(LogTemp, Log, TEXT("InvestigateLastKnownPositionTask: 현재 타겟이 있어서 조사가 필요하지 않습니다."));
         return EBTNodeResult::Failed;
-    }
-    
+
     // === 마지막 알려진 위치 가져오기 ===
     FVector lastKnownLocation;
+
     if (!GetLastKnownLocation(OwnerComp, lastKnownLocation))
     {
-        UE_LOG(LogTemp, Warning, TEXT("InvestigateLastKnownPositionTask: 마지막 알려진 위치를 찾을 수 없습니다!"));
+        GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red,
+            TEXT("Error (NoLastKnownLocation, InvestigateLastKnownPositionTask.cpp) : 마지막 알려진 위치를 찾을 수 없습니다!"));
+
         return EBTNodeResult::Failed;
     }
-    
+
     // === 현재 위치와 너무 가까운지 확인 ===
-    FVector currentLocation = ControlledPawn->GetActorLocation();
+    FVector currentLocation = controlledPawn->GetActorLocation();
     float distanceToTarget = FVector::Dist(currentLocation, lastKnownLocation);
-    
+
+    // 이미 마지막 위치에 가까우면 바로 조사 단계로
     if (distanceToTarget <= AcceptanceRadius)
-    {
-        // 이미 마지막 위치에 가까우면 바로 조사 단계로
-        TaskMemory->CurrentPhase = EInvestigationPhase::InvestigatingAtLocation;
-        UE_LOG(LogTemp, Log, TEXT("InvestigateLastKnownPositionTask: 이미 목표 위치에 가까움, 즉시 조사 시작"));
-    }
+        taskMemory->CurrentPhase = EInvestigationPhase::InvestigatingAtLocation;
+
+    // 마지막 위치로 이동 시작
     else
-    {
-        // 마지막 위치로 이동 시작
-        TaskMemory->CurrentPhase = EInvestigationPhase::MovingToLastKnownLocation;
-        UE_LOG(LogTemp, Log, TEXT("InvestigateLastKnownPositionTask: 마지막 위치로 이동 시작 - Distance: %.1f"), distanceToTarget);
-    }
-    
+        taskMemory->CurrentPhase = EInvestigationPhase::MovingToLastKnownLocation;
+
     // === 메모리에 정보 저장 ===
-    TaskMemory->StartTime = OwnerComp.GetWorld()->GetTimeSeconds();
-    TaskMemory->CurrentPhaseStartTime = TaskMemory->StartTime;
-    TaskMemory->LastKnownLocation = lastKnownLocation;
-    TaskMemory->CurrentTargetLocation = lastKnownLocation;
-    
+    taskMemory->StartTime = OwnerComp.GetWorld()->GetTimeSeconds();
+    taskMemory->CurrentPhaseStartTime = taskMemory->StartTime;
+    taskMemory->LastKnownLocation = lastKnownLocation;
+    taskMemory->CurrentTargetLocation = lastKnownLocation;
+
     // === 수색 포인트들 생성 ===
-    TaskMemory->SearchPoints = GenerateSearchPoints(lastKnownLocation, OwnerComp);
-    
+    taskMemory->SearchPoints = GenerateSearchPoints(lastKnownLocation, OwnerComp);
+
     // === 캐릭터 이동 속도 설정 ===
-    if (ACharacter* Character = Cast<ACharacter>(ControlledPawn))
+    if (ACharacter* character = Cast<ACharacter>(controlledPawn))
     {
-        if (UCharacterMovementComponent* MovementComp = Character->GetCharacterMovement())
-        {
-            MovementComp->MaxWalkSpeed = MovementSpeed;
-        }
+        if (UCharacterMovementComponent* movementComp = character->GetCharacterMovement())
+            movementComp->MaxWalkSpeed = movementSpeed;
     }
-    
+
     // === 경계 상태 설정 ===
-    if (UBlackboardComponent* BB = OwnerComp.GetBlackboardComponent())
-    {
-        BB->SetValueAsBool(IsAlertKey.SelectedKeyName, true);
-    }
-    
+    if (UBlackboardComponent* blackboard = OwnerComp.GetBlackboardComponent())
+        blackboard->SetValueAsBool(IsAlertKey.SelectedKeyName, true);
+
     return EBTNodeResult::InProgress;
 }
 
-void UInvestigateLastKnownPositionTask::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory, float DeltaSeconds)
+void UInvestigateLastKnownPositionTask::TickTask(UBehaviorTreeComponent& ownerComp, uint8* nodeMemory, float deltaSeconds)
 {
     // === 메모리 및 컴포넌트 확인 ===
-    FInvestigateLastKnownPositionTaskMemory* TaskMemory = reinterpret_cast<FInvestigateLastKnownPositionTaskMemory*>(NodeMemory);
+    FInvestigateLastKnownPositionTaskMemory* taskMemory = reinterpret_cast<FInvestigateLastKnownPositionTaskMemory*>(nodeMemory);
     
-    AAIController* AIController = OwnerComp.GetAIOwner();
-    if (!AIController)
+    AAIController* aiController = ownerComp.GetAIOwner();
+
+    if (aiController == nullptr)
     {
-        FinishLatentTask(OwnerComp, EBTNodeResult::Failed);
+        FinishLatentTask(ownerComp, EBTNodeResult::Failed);
+
         return;
     }
     
-    APawn* ControlledPawn = AIController->GetPawn();
-    if (!ControlledPawn)
+    APawn* controlledPawn = aiController->GetPawn();
+
+    if (controlledPawn == nullptr)
     {
-        FinishLatentTask(OwnerComp, EBTNodeResult::Failed);
+        FinishLatentTask(ownerComp, EBTNodeResult::Failed);
+
         return;
     }
     
-    float currentTime = OwnerComp.GetWorld()->GetTimeSeconds();
-    float elapsedTime = currentTime - TaskMemory->StartTime;
-    float phaseElapsedTime = currentTime - TaskMemory->CurrentPhaseStartTime;
+    float currentTime = ownerComp.GetWorld()->GetTimeSeconds();
+    float elapsedTime = currentTime - taskMemory->StartTime;
+    float phaseElapsedTime = currentTime - taskMemory->CurrentPhaseStartTime;
+    
+    // 🔧 전투 상태 해제 시간 체크 추가
+    if (elapsedTime >= combatClearTime && !taskMemory->bCombatStateCleared)
+    {
+        if (UBlackboardComponent* blackboard = ownerComp.GetBlackboardComponent())
+        {
+            blackboard->SetValueAsBool(isInCombatKey.SelectedKeyName, false);
+            taskMemory->bCombatStateCleared = true;
+        }
+    }
     
     // === 최대 실행 시간 체크 ===
-    if (elapsedTime >= MaxExecutionTime)
+    if (elapsedTime >= maxExecutionTime)
     {
-        UE_LOG(LogTemp, Warning, TEXT("InvestigateLastKnownPositionTask: 최대 실행 시간 초과 (%.2fs)"), elapsedTime);
-        if (bClearAlertOnFailure)
+        if (isClearAlertOnFailure)
         {
-            if (UBlackboardComponent* BB = OwnerComp.GetBlackboardComponent())
+            if (UBlackboardComponent* blackboard = ownerComp.GetBlackboardComponent())
             {
-                BB->SetValueAsBool(IsAlertKey.SelectedKeyName, false);
+                blackboard->SetValueAsBool(IsAlertKey.SelectedKeyName, false);
+                blackboard->SetValueAsBool(isInCombatKey.SelectedKeyName, false);
             }
         }
-        FinishLatentTask(OwnerComp, EBTNodeResult::Failed);
+
+        FinishLatentTask(ownerComp, EBTNodeResult::Failed);
+
         return;
     }
     
     // === 타겟 재발견 확인 ===
-    if (bStopOnTargetFound && HasCurrentTarget(OwnerComp))
+    if (isStopOnTargetFound && HasCurrentTarget(ownerComp))
     {
-        TaskMemory->bTargetRediscovered = true;
+        taskMemory->bTargetRediscovered = true;
         UE_LOG(LogTemp, Log, TEXT("InvestigateLastKnownPositionTask: 타겟 재발견으로 조사 중단"));
-        FinishLatentTask(OwnerComp, EBTNodeResult::Succeeded);
+
+        FinishLatentTask(ownerComp, EBTNodeResult::Succeeded);
+
         return;
     }
     
     // === 현재 단계에 따른 처리 ===
-    switch (TaskMemory->CurrentPhase)
+    switch (taskMemory->CurrentPhase)
     {
         case EInvestigationPhase::MovingToLastKnownLocation:
-            HandleMovingToLastKnownLocation(OwnerComp, TaskMemory, currentTime);
+            HandleMovingToLastKnownLocation(ownerComp, taskMemory, currentTime);
             break;
             
         case EInvestigationPhase::InvestigatingAtLocation:
-            HandleInvestigatingAtLocation(OwnerComp, TaskMemory, currentTime, phaseElapsedTime);
+            HandleInvestigatingAtLocation(ownerComp, taskMemory, currentTime, phaseElapsedTime);
             break;
             
         case EInvestigationPhase::MovingToSearchPoint:
-            HandleMovingToSearchPoint(OwnerComp, TaskMemory, currentTime);
+            HandleMovingToSearchPoint(ownerComp, taskMemory, currentTime);
             break;
             
         case EInvestigationPhase::SearchingAtPoint:
-            HandleSearchingAtPoint(OwnerComp, TaskMemory, currentTime, phaseElapsedTime);
+            HandleSearchingAtPoint(ownerComp, taskMemory, currentTime, phaseElapsedTime);
             break;
             
         case EInvestigationPhase::Completed:
-            UE_LOG(LogTemp, Log, TEXT("InvestigateLastKnownPositionTask: 조사 완료"));
-            if (bClearAlertOnFailure)
+        {
+            if (isClearAlertOnFailure)
             {
-                if (UBlackboardComponent* BB = OwnerComp.GetBlackboardComponent())
+                if (UBlackboardComponent* blackboard = ownerComp.GetBlackboardComponent())
                 {
-                    BB->SetValueAsBool(IsAlertKey.SelectedKeyName, false);
+                    blackboard->SetValueAsBool(IsAlertKey.SelectedKeyName, false);
+                    // 🔧 전투 상태도 해제
+                    blackboard->SetValueAsBool(isInCombatKey.SelectedKeyName, false);
                 }
             }
-            FinishLatentTask(OwnerComp, EBTNodeResult::Succeeded);
+
+            FinishLatentTask(ownerComp, EBTNodeResult::Succeeded);
+
             return;
+        }
     }
     
     // === 디버그 정보 표시 ===
@@ -218,22 +235,26 @@ void UInvestigateLastKnownPositionTask::TickTask(UBehaviorTreeComponent& OwnerCo
     if (GEngine && GEngine->bEnableOnScreenDebugMessages)
     {
         FString phaseText;
-        switch (TaskMemory->CurrentPhase)
+        switch (taskMemory->CurrentPhase)
         {
             case EInvestigationPhase::MovingToLastKnownLocation:
                 phaseText = TEXT("Moving to Last Known Location");
                 break;
+
             case EInvestigationPhase::InvestigatingAtLocation:
                 phaseText = TEXT("Investigating at Location");
                 break;
+
             case EInvestigationPhase::MovingToSearchPoint:
                 phaseText = FString::Printf(TEXT("Moving to Search Point %d/%d"), 
-                    TaskMemory->CurrentSearchPointIndex + 1, TaskMemory->SearchPoints.Num());
+                    taskMemory->CurrentSearchPointIndex + 1, taskMemory->SearchPoints.Num());
                 break;
+
             case EInvestigationPhase::SearchingAtPoint:
                 phaseText = FString::Printf(TEXT("Searching at Point %d/%d"), 
-                    TaskMemory->CurrentSearchPointIndex + 1, TaskMemory->SearchPoints.Num());
+                    taskMemory->CurrentSearchPointIndex + 1, taskMemory->SearchPoints.Num());
                 break;
+
             default:
                 phaseText = TEXT("Unknown Phase");
                 break;
@@ -243,13 +264,13 @@ void UInvestigateLastKnownPositionTask::TickTask(UBehaviorTreeComponent& OwnerCo
         GEngine->AddOnScreenDebugMessage(-1, 0.0f, FColor::Yellow, debugText);
         
         // 수색 포인트들 시각화
-        UWorld* World = OwnerComp.GetWorld();
-        DrawDebugSphere(World, TaskMemory->LastKnownLocation, 100.0f, 8, FColor::Red, false, 0.1f);
+        UWorld* World = ownerComp.GetWorld();
+        DrawDebugSphere(World, taskMemory->LastKnownLocation, 100.0f, 8, FColor::Red, false, 0.1f);
         
-        for (int32 i = 0; i < TaskMemory->SearchPoints.Num(); i++)
+        for (int32 i = 0; i < taskMemory->SearchPoints.Num(); i++)
         {
-            FColor pointColor = (i == TaskMemory->CurrentSearchPointIndex) ? FColor::Green : FColor::Blue;
-            DrawDebugSphere(World, TaskMemory->SearchPoints[i], 50.0f, 8, pointColor, false, 0.1f);
+            FColor pointColor = (i == taskMemory->CurrentSearchPointIndex) ? FColor::Green : FColor::Blue;
+            DrawDebugSphere(World, taskMemory->SearchPoints[i], 50.0f, 8, pointColor, false, 0.1f);
         }
     }
     #endif
@@ -272,114 +293,101 @@ void UInvestigateLastKnownPositionTask::OnTaskFinished(UBehaviorTreeComponent& O
     FInvestigateLastKnownPositionTaskMemory* TaskMemory = reinterpret_cast<FInvestigateLastKnownPositionTaskMemory*>(NodeMemory);
     TaskMemory->bIsMoving = false;
     
-    UE_LOG(LogTemp, Log, TEXT("InvestigateLastKnownPositionTask: 종료 - Result: %d"), (int32)TaskResult);
-    
     Super::OnTaskFinished(OwnerComp, NodeMemory, TaskResult);
 }
 
 // === 내부 헬퍼 함수들 구현 ===
 
-bool UInvestigateLastKnownPositionTask::GetLastKnownLocation(UBehaviorTreeComponent& OwnerComp, FVector& OutLocation) const
+bool UInvestigateLastKnownPositionTask::GetLastKnownLocation(UBehaviorTreeComponent& ownerComp, FVector& outLocation) const
 {
-    UBlackboardComponent* BlackboardComp = OwnerComp.GetBlackboardComponent();
-    if (!BlackboardComp)
-    {
+    UBlackboardComponent* blackboardComp = ownerComp.GetBlackboardComponent();
+
+    if (blackboardComp == nullptr)
         return false;
-    }
     
-    FVector lastKnownLocation = BlackboardComp->GetValueAsVector(LastKnownLocationKey.SelectedKeyName);
+    FVector lastKnownLocation = blackboardComp->GetValueAsVector(LastKnownLocationKey.SelectedKeyName);
+
     if (lastKnownLocation.IsZero())
-    {
         return false;
-    }
     
-    OutLocation = lastKnownLocation;
+    outLocation = lastKnownLocation;
     return true;
 }
 
-TArray<FVector> UInvestigateLastKnownPositionTask::GenerateSearchPoints(const FVector& CenterLocation, UBehaviorTreeComponent& OwnerComp) const
+TArray<FVector> UInvestigateLastKnownPositionTask::GenerateSearchPoints(const FVector& centerLocation, UBehaviorTreeComponent& ownerComp) const
 {
     TArray<FVector> searchPoints;
     
-    if (AdditionalSearchPoints <= 0)
-    {
+    if (additionalSearchPoints <= 0)
         return searchPoints;
-    }
     
     // === 중심점 주변에 원형으로 수색 포인트 배치 ===
-    float angleStep = 360.0f / AdditionalSearchPoints;
+    float angleStep = 360.0f / additionalSearchPoints;
     
-    for (int32 i = 0; i < AdditionalSearchPoints; i++)
+    for (int32 i = 0; i < additionalSearchPoints; i++)
     {
         float angle = angleStep * i;
         float radians = FMath::DegreesToRadians(angle);
         
         FVector offset = FVector(
-            FMath::Cos(radians) * SearchRadius,
-            FMath::Sin(radians) * SearchRadius,
+            FMath::Cos(radians) * searchRadius,
+            FMath::Sin(radians) * searchRadius,
             0.0f
         );
         
-        FVector searchPoint = CenterLocation + offset;
+        FVector searchPoint = centerLocation + offset;
         
         // 네비게이션 가능한 위치로 조정
-        FVector navigablePoint = FindNavigablePosition(searchPoint, OwnerComp);
+        FVector navigablePoint = FindNavigablePosition(searchPoint, ownerComp);
+
         if (!navigablePoint.IsZero())
-        {
             searchPoints.Add(navigablePoint);
-        }
     }
     
     return searchPoints;
 }
 
-FVector UInvestigateLastKnownPositionTask::FindNavigablePosition(const FVector& DesiredPosition, UBehaviorTreeComponent& OwnerComp) const
+FVector UInvestigateLastKnownPositionTask::FindNavigablePosition(const FVector& desiredPosition, UBehaviorTreeComponent& ownerComp) const
 {
-    UNavigationSystemV1* NavSystem = UNavigationSystemV1::GetCurrent(OwnerComp.GetWorld());
-    if (!NavSystem)
-    {
-        return DesiredPosition;
-    }
+    UNavigationSystemV1* navSystem = UNavigationSystemV1::GetCurrent(ownerComp.GetWorld());
+
+    if (navSystem == nullptr)
+        return desiredPosition;
     
-    FNavLocation NavLocation;
+    FNavLocation navLocation;
     
     // === 원하는 위치에서 네비게이션 가능한 위치 찾기 ===
-    if (NavSystem->ProjectPointToNavigation(DesiredPosition, NavLocation, FVector(200.0f, 200.0f, 200.0f)))
-    {
-        return NavLocation.Location;
-    }
+    if (navSystem->ProjectPointToNavigation(desiredPosition, navLocation, FVector(200.0f, 200.0f, 200.0f)))
+        return navLocation.Location;
     
     // === 주변에서 네비게이션 가능한 위치 찾기 ===
-    if (NavSystem->GetRandomReachablePointInRadius(DesiredPosition, 300.0f, NavLocation))
-    {
-        return NavLocation.Location;
-    }
+    if (navSystem->GetRandomReachablePointInRadius(desiredPosition, 300.0f, navLocation))
+        return navLocation.Location;
     
     return FVector::ZeroVector;
 }
 
-bool UInvestigateLastKnownPositionTask::HasCurrentTarget(UBehaviorTreeComponent& OwnerComp) const
+bool UInvestigateLastKnownPositionTask::HasCurrentTarget(UBehaviorTreeComponent& ownerComp) const
 {
-    UBlackboardComponent* BlackboardComp = OwnerComp.GetBlackboardComponent();
-    if (!BlackboardComp)
-    {
+    UBlackboardComponent* blackboardComp = ownerComp.GetBlackboardComponent();
+
+    if (blackboardComp == nullptr)
         return false;
-    }
     
-    AActor* currentTarget = Cast<AActor>(BlackboardComp->GetValueAsObject(TargetActorKey.SelectedKeyName));
+    AActor* currentTarget = Cast<AActor>(blackboardComp->GetValueAsObject(TargetActorKey.SelectedKeyName));
+
     return currentTarget != nullptr && IsValid(currentTarget);
 }
 
-bool UInvestigateLastKnownPositionTask::MoveToLocation(UBehaviorTreeComponent& OwnerComp, const FVector& TargetLocation) const
+bool UInvestigateLastKnownPositionTask::MoveToLocation(UBehaviorTreeComponent& ownerComp, const FVector& targetLocation) const
 {
-    AAIController* AIController = OwnerComp.GetAIOwner();
-    if (!AIController)
-    {
+    AAIController* aiController = ownerComp.GetAIOwner();
+
+    if (aiController == nullptr)
         return false;
-    }
     
-    EPathFollowingRequestResult::Type MoveResult = AIController->MoveToLocation(
-        TargetLocation,
+    EPathFollowingRequestResult::Type moveResult = aiController->MoveToLocation(
+        targetLocation,
         AcceptanceRadius,
         true,   // bStopOnOverlap
         true,   // bUsePathfinding
@@ -389,149 +397,134 @@ bool UInvestigateLastKnownPositionTask::MoveToLocation(UBehaviorTreeComponent& O
         true    // bAllowPartialPath
     );
     
-    return MoveResult == EPathFollowingRequestResult::RequestSuccessful;
+    return moveResult == EPathFollowingRequestResult::RequestSuccessful;
 }
 
-bool UInvestigateLastKnownPositionTask::HasReachedDestination(UBehaviorTreeComponent& OwnerComp, const FVector& TargetLocation) const
+bool UInvestigateLastKnownPositionTask::HasReachedDestination(UBehaviorTreeComponent& ownerComp, const FVector& targetLocation) const
 {
-    APawn* ControlledPawn = OwnerComp.GetAIOwner()->GetPawn();
-    if (!ControlledPawn)
-    {
+    APawn* controlledPawn = ownerComp.GetAIOwner()->GetPawn();
+
+    if (controlledPawn == nullptr)
         return false;
-    }
     
-    float distance = FVector::Dist(ControlledPawn->GetActorLocation(), TargetLocation);
+    float distance = FVector::Dist(controlledPawn->GetActorLocation(), targetLocation);
     return distance <= AcceptanceRadius;
 }
 
-AEnemy* UInvestigateLastKnownPositionTask::GetControlledEnemy(UBehaviorTreeComponent& OwnerComp) const
+AEnemy* UInvestigateLastKnownPositionTask::GetControlledEnemy(UBehaviorTreeComponent& ownerComp) const
 {
-    AAIController* AIController = OwnerComp.GetAIOwner();
-    if (!AIController)
-    {
+    AAIController* aiController = ownerComp.GetAIOwner();
+
+    if (aiController == nullptr)
         return nullptr;
-    }
     
-    return Cast<AEnemy>(AIController->GetPawn());
+    return Cast<AEnemy>(aiController->GetPawn());
 }
 
 // === 단계별 처리 함수들 ===
 
-void UInvestigateLastKnownPositionTask::HandleSearchingAtPoint(UBehaviorTreeComponent& OwnerComp, FInvestigateLastKnownPositionTaskMemory* TaskMemory, float CurrentTime, float PhaseElapsedTime)
+void UInvestigateLastKnownPositionTask::HandleSearchingAtPoint(UBehaviorTreeComponent& ownerComp, FInvestigateLastKnownPositionTaskMemory* taskMemory, float currentTime, float phaseElapsedTime)
 {
     // === 수색 시간 체크 ===
-    if (PhaseElapsedTime >= WaitTimeAtSearchPoint)
+    if (phaseElapsedTime >= waitTimeAtSearchPoint)
     {
         // 다음 수색 포인트로 이동
-        TaskMemory->CurrentSearchPointIndex++;
+        taskMemory->CurrentSearchPointIndex++;
         
-        if (TaskMemory->CurrentSearchPointIndex >= TaskMemory->SearchPoints.Num())
-        {
             // 모든 수색 포인트 완료
-            TaskMemory->CurrentPhase = EInvestigationPhase::Completed;
-            UE_LOG(LogTemp, Log, TEXT("InvestigateLastKnownPositionTask: 모든 수색 포인트 완료"));
-        }
+        if (taskMemory->CurrentSearchPointIndex >= taskMemory->SearchPoints.Num())
+            taskMemory->CurrentPhase = EInvestigationPhase::Completed;
+
         else
         {
             // 다음 수색 포인트로 이동
-            TaskMemory->CurrentPhase = EInvestigationPhase::MovingToSearchPoint;
-            TaskMemory->CurrentPhaseStartTime = CurrentTime;
-            TaskMemory->CurrentTargetLocation = TaskMemory->SearchPoints[TaskMemory->CurrentSearchPointIndex];
-            TaskMemory->bIsMoving = false;
-            
-            UE_LOG(LogTemp, Log, TEXT("InvestigateLastKnownPositionTask: 다음 수색 포인트로 이동"));
+            taskMemory->CurrentPhase = EInvestigationPhase::MovingToSearchPoint;
+            taskMemory->CurrentPhaseStartTime = currentTime;
+            taskMemory->CurrentTargetLocation = taskMemory->SearchPoints[taskMemory->CurrentSearchPointIndex];
+            taskMemory->bIsMoving = false;
         }
     }
 }
 
-void UInvestigateLastKnownPositionTask::HandleMovingToLastKnownLocation(UBehaviorTreeComponent& OwnerComp, FInvestigateLastKnownPositionTaskMemory* TaskMemory, float CurrentTime)
+void UInvestigateLastKnownPositionTask::HandleMovingToLastKnownLocation(UBehaviorTreeComponent& ownerComp, FInvestigateLastKnownPositionTaskMemory* taskMemory, float currentTime)
 {
     // === 목적지 도달 확인 ===
-    if (HasReachedDestination(OwnerComp, TaskMemory->LastKnownLocation))
+    if (HasReachedDestination(ownerComp, taskMemory->LastKnownLocation))
     {
         // 조사 단계로 전환
-        TaskMemory->CurrentPhase = EInvestigationPhase::InvestigatingAtLocation;
-        TaskMemory->CurrentPhaseStartTime = CurrentTime;
-        TaskMemory->bIsMoving = false;
-        
-        UE_LOG(LogTemp, Log, TEXT("InvestigateLastKnownPositionTask: 마지막 위치 도달, 조사 시작"));
+        taskMemory->CurrentPhase = EInvestigationPhase::InvestigatingAtLocation;
+        taskMemory->CurrentPhaseStartTime = currentTime;
+        taskMemory->bIsMoving = false;
     }
-    else if (!TaskMemory->bIsMoving)
+
+    else if (!taskMemory->bIsMoving)
     {
         // 이동 시작
-        if (MoveToLocation(OwnerComp, TaskMemory->LastKnownLocation))
-        {
-            TaskMemory->bIsMoving = true;
-            UE_LOG(LogTemp, Log, TEXT("InvestigateLastKnownPositionTask: 마지막 위치로 이동 시작"));
-        }
+        if (MoveToLocation(ownerComp, taskMemory->LastKnownLocation))
+            taskMemory->bIsMoving = true;
+
         else
         {
-            UE_LOG(LogTemp, Warning, TEXT("InvestigateLastKnownPositionTask: 마지막 위치로 이동 실패"));
-            TaskMemory->CurrentPhase = EInvestigationPhase::Completed;
+            GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red,
+                TEXT("Error (MoveToLastKnownLocationFailed, InvestigateLastKnownPositionTask.cpp) : 마지막 위치로 이동에 실패했습니다!"));
+
+            taskMemory->CurrentPhase = EInvestigationPhase::Completed;
         }
     }
 }
 
-void UInvestigateLastKnownPositionTask::HandleInvestigatingAtLocation(UBehaviorTreeComponent& OwnerComp, FInvestigateLastKnownPositionTaskMemory* TaskMemory, float CurrentTime, float PhaseElapsedTime)
+void UInvestigateLastKnownPositionTask::HandleInvestigatingAtLocation(UBehaviorTreeComponent& ownerComp, FInvestigateLastKnownPositionTaskMemory* taskMemory, float currentTime, float phaseElapsedTime)
 {
     // === 조사 시간 체크 ===
-    if (PhaseElapsedTime >= WaitTimeAtSearchPoint)
+    if (phaseElapsedTime >= waitTimeAtSearchPoint)
     {
         // 추가 수색 포인트가 있는지 확인
-        if (TaskMemory->SearchPoints.Num() > 0)
+        if (taskMemory->SearchPoints.Num() > 0)
         {
             // 첫 번째 수색 포인트로 이동 시작
-            TaskMemory->CurrentPhase = EInvestigationPhase::MovingToSearchPoint;
-            TaskMemory->CurrentPhaseStartTime = CurrentTime;
-            TaskMemory->CurrentSearchPointIndex = 0;
-            TaskMemory->CurrentTargetLocation = TaskMemory->SearchPoints[0];
-            TaskMemory->bIsMoving = false;
-            
-            UE_LOG(LogTemp, Log, TEXT("InvestigateLastKnownPositionTask: 수색 포인트로 이동 시작"));
+            taskMemory->CurrentPhase = EInvestigationPhase::MovingToSearchPoint;
+            taskMemory->CurrentPhaseStartTime = currentTime;
+            taskMemory->CurrentSearchPointIndex = 0;
+            taskMemory->CurrentTargetLocation = taskMemory->SearchPoints[0];
+            taskMemory->bIsMoving = false;
         }
+
+        // 수색 포인트가 없으면 조사 완료
         else
-        {
-            // 수색 포인트가 없으면 조사 완료
-            TaskMemory->CurrentPhase = EInvestigationPhase::Completed;
-            UE_LOG(LogTemp, Log, TEXT("InvestigateLastKnownPositionTask: 추가 수색 포인트 없음, 조사 완료"));
-        }
+            taskMemory->CurrentPhase = EInvestigationPhase::Completed;
     }
 }
 
-void UInvestigateLastKnownPositionTask::HandleMovingToSearchPoint(UBehaviorTreeComponent& OwnerComp, FInvestigateLastKnownPositionTaskMemory* TaskMemory, float CurrentTime)
+void UInvestigateLastKnownPositionTask::HandleMovingToSearchPoint(UBehaviorTreeComponent& ownerComp, FInvestigateLastKnownPositionTaskMemory* taskMemory, float currentTime)
 {
     // === 수색 포인트 도달 확인 ===
-    if (HasReachedDestination(OwnerComp, TaskMemory->CurrentTargetLocation))
+    if (HasReachedDestination(ownerComp, taskMemory->CurrentTargetLocation))
     {
         // 해당 포인트에서 수색 시작
-        TaskMemory->CurrentPhase = EInvestigationPhase::SearchingAtPoint;
-        TaskMemory->CurrentPhaseStartTime = CurrentTime;
-        TaskMemory->bIsMoving = false;
+        taskMemory->CurrentPhase = EInvestigationPhase::SearchingAtPoint;
+        taskMemory->CurrentPhaseStartTime = currentTime;
+        taskMemory->bIsMoving = false;
         
         UE_LOG(LogTemp, Log, TEXT("InvestigateLastKnownPositionTask: 수색 포인트 %d 도달, 수색 시작"), 
-            TaskMemory->CurrentSearchPointIndex + 1);
+            taskMemory->CurrentSearchPointIndex + 1);
     }
-    else if (!TaskMemory->bIsMoving)
+
+    else if (!taskMemory->bIsMoving)
     {
         // 수색 포인트로 이동 시작
-        if (MoveToLocation(OwnerComp, TaskMemory->CurrentTargetLocation))
-        {
-            TaskMemory->bIsMoving = true;
-            UE_LOG(LogTemp, Log, TEXT("InvestigateLastKnownPositionTask: 수색 포인트 %d로 이동 시작"), 
-                TaskMemory->CurrentSearchPointIndex + 1);
-        }
+        if (MoveToLocation(ownerComp, taskMemory->CurrentTargetLocation))
+            taskMemory->bIsMoving = true;
+
         else
         {
             // 이동 실패 시 다음 포인트로
-            TaskMemory->CurrentSearchPointIndex++;
-            if (TaskMemory->CurrentSearchPointIndex >= TaskMemory->SearchPoints.Num())
-            {
-                TaskMemory->CurrentPhase = EInvestigationPhase::Completed;
-            }
+            taskMemory->CurrentSearchPointIndex++;
+
+            if (taskMemory->CurrentSearchPointIndex >= taskMemory->SearchPoints.Num())
+                taskMemory->CurrentPhase = EInvestigationPhase::Completed;
+
             else
-            {
-                TaskMemory->CurrentTargetLocation = TaskMemory->SearchPoints[TaskMemory->CurrentSearchPointIndex];
-            }
+                taskMemory->CurrentTargetLocation = taskMemory->SearchPoints[taskMemory->CurrentSearchPointIndex];
         }
     }
 }

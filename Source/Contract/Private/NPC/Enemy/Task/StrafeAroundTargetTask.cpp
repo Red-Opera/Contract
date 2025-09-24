@@ -22,6 +22,12 @@ UStrafeAroundTargetTask::UStrafeAroundTargetTask()
     targetActorKey.AddObjectFilter(this, GET_MEMBER_NAME_CHECKED(UStrafeAroundTargetTask, targetActorKey), AActor::StaticClass());
     fireDistanceKey.AddFloatFilter(this, GET_MEMBER_NAME_CHECKED(UStrafeAroundTargetTask, fireDistanceKey));
     
+    // 자동 플레이어 찾기 기본 활성화
+    bAutoFindPlayer = true;
+    
+    // 우선순위 타겟 키 초기화
+    priorityTargetKeys = {"PlayerCharacter", "Player", "TargetActor", "Target", "PlayerPawn"};
+    
     // 기본값 설정
     isUseFireDistanceCondition = false;
     fireDistanceThreshold = 800.0f;
@@ -108,13 +114,7 @@ void UStrafeAroundTargetTask::TickTask(UBehaviorTreeComponent& ownerComp, uint8*
     float elapsedTime = currentTime - taskMemory->startTime;
     
     if (elapsedTime >= maxExecutionTime)
-    {
-        GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, 
-            TEXT("Info (MaxExecutionTimeReached, StrafeAroundTargetTask.cpp) : 최대 실행 시간 도달 - 종료"));
-        FinishLatentTask(ownerComp, EBTNodeResult::Succeeded);
-
         return;
-    }
     
     // FireDistance 조건 지속 확인
     if (isUseFireDistanceCondition && !CheckFireDistanceCondition(ownerComp))
@@ -266,9 +266,6 @@ void UStrafeAroundTargetTask::TickTask(UBehaviorTreeComponent& ownerComp, uint8*
             {
                 taskMemory->isMoving = false;
                 taskMemory->moveRequestID = FAIRequestID::InvalidRequest;
-                
-                GEngine->AddOnScreenDebugMessage(-1, 1.f, FColor::Cyan,
-                    TEXT("Info (MovementCompleted, StrafeAroundTargetTask.cpp) : 이동 완료"));
             }
 
             else if (status == EPathFollowingStatus::Paused)
@@ -388,7 +385,7 @@ bool UStrafeAroundTargetTask::GetTargetInfo(UBehaviorTreeComponent& ownerComp, F
     UBlackboardComponent* blackboardComp = ownerComp.GetBlackboardComponent();
     APawn* controlledPawn = ownerComp.GetAIOwner()->GetPawn();
 
-    if (!blackboardComp || !controlledPawn)
+    if (blackboardComp == nullptr || controlledPawn == nullptr)
     {
         GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, 
             TEXT("Error (NullComponent, StrafeAroundTargetTask.cpp) : BlackboardComp 또는 ControlledPawn이 없습니다!"));
@@ -396,108 +393,18 @@ bool UStrafeAroundTargetTask::GetTargetInfo(UBehaviorTreeComponent& ownerComp, F
         return false;
     }
 
-    // 블랙보드 키 체크
-    if (targetActorKey.SelectedKeyName.IsNone())
+    // 유효한 타겟 찾기
+    AActor* targetActor = FindValidTarget(ownerComp);
+    
+    if (targetActor == nullptr)
     {
-        GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, 
-            TEXT("Error (NoTargetActorKey, StrafeAroundTargetTask.cpp) : TargetActorKey가 설정되지 않았습니다!"));
+        GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Error (NoValidTarget, StrafeAroundTargetTask.cpp) : 유효한 타겟을 찾을 수 없습니다!"));
 
         return false;
     }
 
-    GEngine->AddOnScreenDebugMessage(-1, 2.f, FColor::Cyan, 
-        FString::Printf(TEXT("설정된 타겟 키: %s"), *targetActorKey.SelectedKeyName.ToString()));
-
-    // 타겟 액터 가져오기
-    UObject* targetObject = blackboardComp->GetValueAsObject(targetActorKey.SelectedKeyName);
-    AActor* targetActor = Cast<AActor>(targetObject);
-
-    // 타겟이 자기 자신이거나 없는 경우 플레이어 검색
-    if (!targetActor || targetActor == controlledPawn || targetActorKey.SelectedKeyName.ToString().Contains(TEXT("Self")))
-    {
-        GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Yellow, 
-            TEXT("Warning (SelfTarget, StrafeAroundTargetTask.cpp) : 타겟이 자기 자신이거나 없음 - 플레이어 검색 시도"));
-
-        // 일반적인 플레이어 키들 확인
-        TArray<FName> playerKeys = {
-            TEXT("PlayerCharacter"), 
-            TEXT("Player"), 
-            TEXT("TargetActor"),
-            TEXT("Target"),
-            TEXT("PlayerPawn")
-        };
-        
-        bool foundPlayer = false;
-
-        for (const FName& keyName : playerKeys)
-        {
-            UObject* testObj = blackboardComp->GetValueAsObject(keyName);
-            AActor* testActor = Cast<AActor>(testObj);
-            
-            if (testActor && testActor != controlledPawn)
-            {
-                targetActor = testActor;
-                foundPlayer = true;
-                
-                GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Green, 
-                    FString::Printf(TEXT("플레이어 발견: %s 키에서 %s"), 
-                    *keyName.ToString(), *testActor->GetName()));
-
-                break;
-            }
-        }
-        
-        // 블랙보드에서 플레이어를 찾지 못한 경우 월드에서 직접 검색
-        if (!foundPlayer)
-        {
-            UWorld* world = ownerComp.GetWorld();
-
-            if (world == nullptr)
-            {
-                GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Error (NullWorld, StrafeAroundTargetTask.cpp) : 월드가 유효하지 않습니다!"));
-
-                return false;
-            }
-
-            APawn* playerPawn = world->GetFirstPlayerController()->GetPawn();
-
-            if (playerPawn == nullptr)
-            {
-                GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Error (NullPlayerPawn, StrafeAroundTargetTask.cpp) : 플레이어 Pawn이 유효하지 않습니다!"));
-
-                return false;
-			}
-
-            if (playerPawn != controlledPawn)
-            {
-                targetActor = playerPawn;
-                foundPlayer = true;
-
-                GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Green,
-                    FString::Printf(TEXT("Success (PlayerFoundInWorld, StrafeAroundTargetTask.cpp) : 월드에서 플레이어 발견: %s"), *playerPawn->GetName()));
-
-                // 블랙보드에 플레이어 정보 업데이트
-                for (const FName& keyName : playerKeys)
-                    blackboardComp->SetValueAsObject(keyName, playerPawn);
-            }
-        }
-        
-        if (!foundPlayer)
-        {
-            GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, 
-                TEXT("Error (PlayerNotFound, StrafeAroundTargetTask.cpp) : 플레이어를 찾을 수 없습니다!"));
-
-            return false;
-        }
-    }
-
-    if (!IsValid(targetActor))
-    {
-        GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, 
-            TEXT("Error (InvalidTargetActor, StrafeAroundTargetTask.cpp) : TargetActor가 유효하지 않습니다!"));
-
-        return false;
-    }
+    // 블랙보드에 타겟 설정 (다음번 사용을 위해)
+    SetupTargetInBlackboard(ownerComp, targetActor);
 
     FVector currentLocation = controlledPawn->GetActorLocation();
     outTargetLocation = targetActor->GetActorLocation();
@@ -506,31 +413,128 @@ bool UStrafeAroundTargetTask::GetTargetInfo(UBehaviorTreeComponent& ownerComp, F
     // 상세한 위치 정보 디버깅
     static float lastLogTime = 0.0f;
     float currentTime = ownerComp.GetWorld()->GetTimeSeconds();
+
     if (currentTime - lastLogTime > 2.0f)
-    {
-        GEngine->AddOnScreenDebugMessage(-1, 2.f, FColor::Green, 
-            FString::Printf(TEXT("타겟: %s"), *targetActor->GetName()));
-
-        GEngine->AddOnScreenDebugMessage(-1, 2.f, FColor::Green, 
-            FString::Printf(TEXT("현재 위치: %s"), *currentLocation.ToString()));
-
-        GEngine->AddOnScreenDebugMessage(-1, 2.f, FColor::Green, 
-            FString::Printf(TEXT("타겟 위치: %s"), *outTargetLocation.ToString()));
-
-        GEngine->AddOnScreenDebugMessage(-1, 2.f, FColor::Green, 
-            FString::Printf(TEXT("계산된 거리: %.1f"), outCurrentDistance));
         lastLogTime = currentTime;
-    }
     
-    // 거리가 0인 경우 처리
+    // 거리 유효성 검사
     if (outCurrentDistance <= 0.0f)
     {
         GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, 
-            FString::Printf(TEXT("Error (ZeroDistance, StrafeAroundTargetTask.cpp) : 여전히 거리가 0입니다! 타겟: %s"), *targetActor->GetName()));
+            FString::Printf(TEXT("Error (ZeroDistance, StrafeAroundTargetTask.cpp) : 거리가 0입니다! 타겟: %s"), *targetActor->GetName()));
 
         return false;
     }
     
+    return true;
+}
+
+AActor* UStrafeAroundTargetTask::FindValidTarget(UBehaviorTreeComponent& ownerComp) const
+{
+    UBlackboardComponent* blackboardComp = ownerComp.GetBlackboardComponent();
+    APawn* controlledPawn = ownerComp.GetAIOwner()->GetPawn();
+
+    if (blackboardComp == nullptr || controlledPawn == nullptr)
+    {
+        GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, 
+			TEXT("Error (NullComponent, StrafeAroundTargetTask.cpp) : BlackboardComp 또는 ControlledPawn이 없습니다!"));
+
+        return nullptr;
+    }
+
+    AActor* targetActor = nullptr;
+
+    // 1단계: 설정된 targetActorKey 확인
+    if (!targetActorKey.SelectedKeyName.IsNone())
+    {
+        UObject* targetObject = blackboardComp->GetValueAsObject(targetActorKey.SelectedKeyName);
+        AActor* keyTarget = Cast<AActor>(targetObject);
+        
+        if (IsValid(keyTarget) && keyTarget != controlledPawn)
+            return keyTarget;
+
+        else
+        {
+            GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Yellow, 
+                FString::Printf(TEXT("Warning (InvalidKeyTarget, StrafeAroundTargetTask.cpp) : %s 키의 타겟이 유효하지 않음"), 
+                *targetActorKey.SelectedKeyName.ToString()));
+		}
+    }
+
+    // 2단계: 자동 플레이어 찾기가 활성화된 경우
+    if (bAutoFindPlayer)
+    {
+        // 우선순위 키들 확인
+        for (const FString& keyStr : priorityTargetKeys)
+        {
+            FName keyName(*keyStr);
+            UObject* testObj = blackboardComp->GetValueAsObject(keyName);
+            AActor* testActor = Cast<AActor>(testObj);
+
+            if (IsValid(testActor) && testActor != controlledPawn)
+                return testActor;
+        }
+
+        // 3단계: 월드에서 플레이어 직접 검색
+        UWorld* world = ownerComp.GetWorld();
+
+        if (world == nullptr)
+        {
+            GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red,
+                TEXT("Error (NullWorld, StrafeAroundTargetTask.cpp) : 월드가 없습니다!"));
+
+            return nullptr;
+        }
+
+        APlayerController* playerController = world->GetFirstPlayerController();
+
+        if (playerController == nullptr)
+        {
+            GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red,
+                TEXT("Error (NoPlayerController, StrafeAroundTargetTask.cpp) : 플레이어 컨트롤러를 찾을 수 없습니다!"));
+            return nullptr;
+        }
+
+        APawn* playerPawn = playerController->GetPawn();
+
+        if (!IsValid(playerPawn) || playerPawn == controlledPawn)
+        {
+            GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow,
+                TEXT("Warning (NoPlayerPawn, StrafeAroundTargetTask.cpp) : 플레이어 폰이 없거나 동일한 폰입니다"));
+
+            return nullptr;
+        }
+
+        return playerPawn;
+    }
+
+    GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, 
+        TEXT("Warning (NoTargetFound, StrafeAroundTargetTask.cpp) : 유효한 타겟을 찾을 수 없습니다"));
+    
+    return nullptr;
+}
+
+bool UStrafeAroundTargetTask::SetupTargetInBlackboard(UBehaviorTreeComponent& ownerComp, AActor* targetActor) const
+{
+    if (targetActor == nullptr)
+        return false;
+
+    UBlackboardComponent* blackboardComp = ownerComp.GetBlackboardComponent();
+    
+    if (blackboardComp == nullptr)
+        return false;
+
+    // 설정된 키가 있으면 해당 키에 설정
+    if (!targetActorKey.SelectedKeyName.IsNone())
+        blackboardComp->SetValueAsObject(targetActorKey.SelectedKeyName, targetActor);
+
+    // 공통 키들에도 설정 (다른 태스크들이 사용할 수 있도록)
+    for (const FString& keyStr : priorityTargetKeys)
+    {
+        FName keyName(*keyStr);
+        blackboardComp->SetValueAsObject(keyName, targetActor);
+    }
+
     return true;
 }
 

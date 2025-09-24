@@ -51,41 +51,49 @@ protected:
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "State", meta = (AllowPrivateAccess = "true"))
     struct FBlackboardKeySelector IsAlertKey;
     
+    // 🔧 전투 상태를 나타내는 블랙보드 키 추가
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "State", meta = (AllowPrivateAccess = "true"))
+    struct FBlackboardKeySelector isInCombatKey;
+    
     // 도착 허용 반경
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement", meta = (AllowPrivateAccess = "true", ClampMin = "50.0", ClampMax = "500.0"))
     float AcceptanceRadius = 100.0f;
     
     // 조사 지속 시간 (초)
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Investigation", meta = (AllowPrivateAccess = "true", ClampMin = "1.0", ClampMax = "30.0"))
-    float InvestigationDuration = 8.0f;
+    float investigationDuration = 8.0f;
     
     // 추가 수색 포인트 개수 (마지막 위치 주변을 추가로 수색)
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Investigation", meta = (AllowPrivateAccess = "true", ClampMin = "0", ClampMax = "8"))
-    int32 AdditionalSearchPoints = 3;
+    int32 additionalSearchPoints = 3;
     
     // 수색 반경
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Investigation", meta = (AllowPrivateAccess = "true", ClampMin = "100.0", ClampMax = "1000.0"))
-    float SearchRadius = 300.0f;
+    float searchRadius = 300.0f;
     
     // 각 수색 포인트에서의 대기 시간 (초)
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Investigation", meta = (AllowPrivateAccess = "true", ClampMin = "1.0", ClampMax = "10.0"))
-    float WaitTimeAtSearchPoint = 2.0f;
+    float waitTimeAtSearchPoint = 2.0f;
     
     // 최대 실행 시간 (초)
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Timing", meta = (AllowPrivateAccess = "true", ClampMin = "5.0", ClampMax = "60.0"))
-    float MaxExecutionTime = 30.0f;
+    float maxExecutionTime = 30.0f;
     
     // 이동 속도
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement", meta = (AllowPrivateAccess = "true", ClampMin = "100.0", ClampMax = "800.0"))
-    float MovementSpeed = 300.0f;
+    float movementSpeed = 300.0f;
     
     // 조사 중 타겟을 재발견했을 때 즉시 종료할지 여부
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Investigation", meta = (AllowPrivateAccess = "true"))
-    bool bStopOnTargetFound = true;
+    bool isStopOnTargetFound = true;
     
     // 조사 실패 시 경계 상태 해제 여부
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Investigation", meta = (AllowPrivateAccess = "true"))
-    bool bClearAlertOnFailure = true;
+    bool isClearAlertOnFailure = true;
+    
+    // 🔧 전투 상태 해제 시간 추가
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Investigation", meta = (AllowPrivateAccess = "true", ClampMin = "5.0", ClampMax = "60.0"))
+    float combatClearTime = 10.0f;
 
 private:
     // === 내부 헬퍼 함수들 ===
@@ -158,6 +166,9 @@ struct FInvestigateLastKnownPositionTaskMemory
     // 타겟 재발견 여부
     bool bTargetRediscovered = false;
     
+    // 🔧 전투 상태 해제 여부
+    bool bCombatStateCleared = false;
+    
     // 초기화 함수
     void Initialize()
     {
@@ -171,5 +182,6 @@ struct FInvestigateLastKnownPositionTaskMemory
         bIsMoving = false;
         bInvestigationCompleted = false;
         bTargetRediscovered = false;
+        bCombatStateCleared = false;  // 🔧 초기화 추가
     }
 };
