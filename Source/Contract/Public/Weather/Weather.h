@@ -37,7 +37,7 @@ protected:
 
 	// 초기 회전값
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Day/Night")
-	FRotator baseRotation = FRotator(0.0f, 0.0f, 90.0f);
+	FRotator baseRotation = FRotator(45.0f, 45.0f, 90.0f);
 
 	// 비 효과 설정
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Rain")
@@ -55,7 +55,7 @@ protected:
 	void StopRain();
 
 	UFUNCTION(BlueprintCallable, Category = "Rain")
-	void SetRainEnabled(bool bEnabled);
+	void SetRainEnabled(bool isEnabled);
 
 	UFUNCTION(BlueprintPure, Category = "Rain")
 	bool IsRaining() const;

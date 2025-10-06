@@ -69,14 +69,12 @@ void AWeather::Tick(float deltaTime)
 			
 			// 확률적으로 비 결정
 			float randomValue = FMath::RandRange(0.0f, 1.0f);
+
 			if (randomValue <= rainProbability)
-			{
 				StartRain();
-			}
+
 			else
-			{
 				StopRain();
-			}
 		}
 
 		float normalizedTime = currentTime / dayCycleTime;
@@ -84,9 +82,9 @@ void AWeather::Tick(float deltaTime)
 		// 회전 조절 - Roll(X)=0, Yaw(Z)=90 고정, Pitch(Y)만 회전
 		AActor* lightOwner = directionalLight->GetOwner();
 		FRotator newRotation;
-		newRotation.Roll = 0.0f;  // X(Roll) 고정
+		newRotation.Roll = 45.0f;  // X(Roll) 고정
 		newRotation.Pitch = initialRotation.Pitch + (normalizedTime * 360.0f);  // Y(Pitch) 회전
-		newRotation.Yaw = 90.0f;  // Z(Yaw) 고정
+		newRotation.Yaw = 45.0f;  // Z(Yaw) 고정
 		lightOwner->SetActorRotation(newRotation);
 
 		// 밝기 조절 - 50%에서 증가 시작, 75%에서 최대값, 100%에서 nightIntensity
@@ -126,9 +124,9 @@ void AWeather::StopRain()
 	// 비 효과 중지 로직 추가 가능
 }
 
-void AWeather::SetRainEnabled(bool bEnabled)
+void AWeather::SetRainEnabled(bool isEnabled)
 {
-	isRaining = bEnabled;
+	this->isRaining = isEnabled;
 }
 
 bool AWeather::IsRaining() const
