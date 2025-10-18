@@ -19,6 +19,7 @@ public class Contract : ModuleRules
         PublicIncludePaths.Add("Contract/Public/Player");
         PublicIncludePaths.Add("Contract/Public/Player/Item");
         PublicIncludePaths.Add("Contract/Public/Quest");
+        PublicIncludePaths.Add("Contract/Public/Shop");
         PublicIncludePaths.Add("Contract/Public/Weather");
     }
 }
