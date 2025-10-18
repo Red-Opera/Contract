@@ -24,6 +24,12 @@ AItemShop::AItemShop()
 	shopBox->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
 	shopBox->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Overlap);
 	shopBox->SetGenerateOverlapEvents(true);
+
+	// Camera Component 생성 및 설정
+	shopCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("ShopCamera"));
+	shopCamera->SetupAttachment(root);
+	shopCamera->SetRelativeLocation(FVector(0.0f, 0.0f, 200.0f));
+	shopCamera->SetRelativeRotation(FRotator(-45.0f, 0.0f, 0.0f));
 }
 
 void AItemShop::BeginPlay()

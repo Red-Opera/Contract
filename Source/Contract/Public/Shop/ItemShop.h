@@ -3,6 +3,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "Components/BoxComponent.h"
+#include "Camera/CameraComponent.h"
 #include "ItemShop.generated.h"
 
 UCLASS()
@@ -23,6 +24,9 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Collision")
 	UBoxComponent* shopBox;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Camera")
+	UCameraComponent* shopCamera;
 
 	UFUNCTION()
 	void OnBoxBeginOverlap(UPrimitiveComponent* overlappedComponent, AActor* otherActor, UPrimitiveComponent* otherComp, int32 otherBodyIndex, bool isFromSweep, const FHitResult& sweepResult);
