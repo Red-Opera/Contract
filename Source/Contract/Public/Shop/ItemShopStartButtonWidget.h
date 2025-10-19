@@ -20,9 +20,16 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Shop")
 	int32 buttonIndex;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Shop")
+	TSubclassOf<UUserWidget> itemShopWidgetClass;
+
 	void SetButtonIndex(int32 index);
 
 	UFUNCTION()
 	void OnMainButtonClicked();
+
+private:
+	UPROPERTY()
+	UUserWidget* itemShopWidgetInstance;
 	
 };

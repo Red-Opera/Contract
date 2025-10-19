@@ -4,6 +4,7 @@
 #include "GameFramework/Actor.h"
 #include "Components/BoxComponent.h"
 #include "Camera/CameraComponent.h"
+#include "ItemShopWidgetStart.h"
 #include "ItemShop.generated.h"
 
 UCLASS()
@@ -15,6 +16,11 @@ public:
 	AItemShop();
 
 	virtual void Tick(float deltaTime) override;
+
+	static void SetItemShopWidgetOpen(bool isOpen);
+	static bool IsItemShopWidgetCurrentlyOpen();
+	static void EnableESCBinding(bool enable);
+	static AItemShop* GetCurrentItemShop();
 
 protected:
 	virtual void BeginPlay() override;
@@ -28,6 +34,9 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Camera")
 	UCameraComponent* shopCamera;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
+	TSubclassOf<UUserWidget> itemShopStartWidgetClass;
+
 	UFUNCTION()
 	void OnBoxBeginOverlap(UPrimitiveComponent* overlappedComponent, AActor* otherActor, UPrimitiveComponent* otherComp, int32 otherBodyIndex, bool isFromSweep, const FHitResult& sweepResult);
 
@@ -36,8 +45,26 @@ protected:
 
 private:
 	bool isPlayerInside;
+	bool isShopOpen;
+
+	static bool isItemShopWidgetOpen;
+
+	UPROPERTY()
+	UUserWidget* itemShopStartWidgetInstance;
+
+	APlayerController* playerController;
+	AActor* originalViewTarget;
+
+	FInputActionBinding* escBinding;
 
 	void SetupPlayerInput();
-	void OnInteractionPressed();
+	void SwitchToShopCamera();
+	void RestoreOriginalCamera();
+	void CloseShop();
 
+	void OnInteractionPressed();
+	void OnESCPressed();
+
+private:
+	static AItemShop* currentItemShop;
 };
