@@ -29,6 +29,9 @@ AGun::AGun()
     
     // 오디오 컴포넌트 기본 설정
     audioComponent->bAutoActivate = false; // 자동 재생 방지
+
+    // 기본값으로 아이콘 초기화
+    itemIcon = nullptr;
 }
 
 void AGun::BeginPlay()

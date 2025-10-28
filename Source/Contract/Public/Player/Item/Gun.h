@@ -47,6 +47,9 @@ public:
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bullet")
     class UNiagaraComponent* gunMuzzleFireNiagara;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bullet")
+    class UTexture2D* itemIcon;
+
     // === 사운드 관련 ===
     
     // 총 발사 사운드 큐
