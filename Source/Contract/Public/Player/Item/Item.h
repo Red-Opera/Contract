@@ -1,6 +1,7 @@
 ﻿#pragma once
 
 #include "CoreMinimal.h"
+#include "ItemType.h"
 #include "GameFramework/Actor.h"
 #include "Sound/SoundCue.h"
 #include "Item.generated.h"
